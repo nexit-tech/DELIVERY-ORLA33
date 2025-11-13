@@ -1,6 +1,10 @@
 .container {
-  min-height: 100vh;
-  padding-bottom: 5rem;
+  /* min-height: 100vh; <-- REMOVIDO */
+  flex: 1; /* <-- ADICIONADO: Faz o main crescer para preencher o espaço */
+  overflow-y: auto; /* <-- ADICIONADO: Faz o main ser o scroller */
+  overscroll-behavior: contain; /* <-- ADICIONADO: Para o "salto" no final do scroll */
+  
+  padding-bottom: 80px; /* Mantido: para o conteúdo não ficar atrás da navbar */
   background-color: var(--bg-primary);
 }
 

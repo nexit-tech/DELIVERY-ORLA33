@@ -1,0 +1,240 @@
+/* app/home/components/LoginModal/styles.module.css */
+
+/* ... (Estilos de .overlay, .modalContent, .header, .closeButton permanecem iguais) ... */
+.overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex; justify-content: center; align-items: flex-end;
+  z-index: 1000; opacity: 0; transition: opacity 0.3s ease;
+}
+.overlay.open { opacity: 1; }
+.modalContent {
+  background-color: var(--background-secondary);
+  width: 100%; max-width: 430px; height: 90vh;
+  border-top-left-radius: 1.5rem; border-top-right-radius: 1.5rem;
+  box-shadow: 0 -5px 30px var(--shadow-color);
+  display: flex; flex-direction: column; position: relative;
+  overflow: hidden; transform: translateY(100%);
+  transition: transform 0.3s ease-out;
+}
+.modalContent.open { transform: translateY(0%); }
+.header {
+  display: flex; justify-content: center; align-items: center;
+  padding: 1.5rem; border-bottom: 1px solid var(--border-color);
+  position: relative; flex-shrink: 0;
+}
+.header h2 { font-size: 1.25rem; font-weight: 600; color: var(--text-primary); }
+.closeButton {
+  position: absolute; top: 50%; left: 1.5rem;
+  transform: translateY(-50%);
+  background: var(--background-primary); color: var(--text-primary);
+  border: none; border-radius: 50%;
+  width: 32px; height: 32px;
+  display: flex; justify-content: center; align-items: center;
+  cursor: pointer;
+}
+            
+/* Conteúdo principal do modal */
+.contentBody {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    overflow-y: auto;
+}
+
+/* ... (Scrollbar, .iconWrapper, .title permanecem iguais) ... */
+.contentBody::-webkit-scrollbar { width: 6px; }
+.contentBody::-webkit-scrollbar-track { background: transparent; }
+.contentBody::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+
+.iconWrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: var(--background-primary);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2rem;
+}
+
+/* ... (Formulário, inputs, etc. permanecem iguais) ... */
+.form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.inputGroup {
+    position: relative;
+    width: 100%;
+}
+
+.inputIcon {
+    position: absolute;
+    top: 50%;
+    left: 1rem;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    z-index: 1;
+}
+
+.input {
+    width: 100%;
+    height: 50px;
+    background-color: var(--background-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 0 1rem 0 3rem;
+    font-size: 1rem;
+    color: var(--text-primary);
+    transition: border-color 0.2s ease;
+}
+.input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+.input::placeholder {
+    color: var(--text-secondary);
+}
+
+.addressTitle {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: left;
+  width: 100%;
+  margin-top: 1rem;
+  margin-bottom: -0.5rem;
+}
+.inputGrid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1rem;
+  width: 100%;
+}
+.inputGrid .inputGroup .input {
+  padding-left: 1rem;
+}
+
+.submitButton {
+    width: 100%;
+    border: none;
+    border-radius: 2rem;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--accent-color);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+/* ADICIONADO */
+.submitButton:disabled {
+  background-color: var(--text-secondary);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* --- NOVO: Estilo de Erro --- */
+.error {
+  color: #e74c3c; /* Vermelho */
+  font-size: 0.9rem;
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+
+.submitButton:active {
+    transform: scale(0.98);
+}
+
+.divider {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+.divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+.divider span {
+    padding: 0 1rem;
+}
+
+.googleButton {
+    width: 100%;
+    border: none;
+    border-radius: 2rem;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    /* margin-bottom: 1rem; <-- REMOVIDO PARA USAR A MARGEM DO PRÓXIMO */
+}
+.googleButton:active {
+    background-color: var(--border-color);
+    transform: scale(0.98);
+}
+
+/* --- AJUSTADO AQUI --- */
+.toggleModeButton {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 1.5rem; /* AUMENTADO O ESPAÇO */
+  padding: 0.5rem;
+}
+/* A tag <strong> que adicionámos no TSX */
+.toggleModeButton strong {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+/* --- FIM DO AJUSTE --- */
+
+
+.guestButton {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-top: 1rem; /* AUMENTADO O ESPAÇO */
+    cursor: pointer;
+}
+.guestButton:active {
+    transform: scale(0.98);
+}

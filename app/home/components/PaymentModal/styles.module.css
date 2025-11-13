@@ -1,0 +1,224 @@
+/* app/home/components/PaymentModal/styles.module.css */
+
+/* Overlay e animação (igual aos outros) */
+.overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1001; /* Um pouco acima dos outros modais se necessário */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.overlay.open { opacity: 1; }
+
+.modalContent {
+  background-color: var(--background-secondary);
+  width: 100%;
+  max-width: 430px;
+  height: 90vh;
+  border-top-left-radius: 1.5rem;
+  border-top-right-radius: 1.5rem;
+  box-shadow: 0 -5px 30px var(--shadow-color);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transform: translateY(100%);
+  transition: transform 0.3s ease-out;
+}
+.modalContent.open { transform: translateY(0%); }
+
+/* Header (igual aos outros) */
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+  flex-shrink: 0;
+}
+.header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.closeButton {
+  position: absolute;
+  top: 50%;
+  left: 1.5rem;
+  transform: translateY(-50%);
+  background: var(--background-primary);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* --- Conteúdo --- */
+.scrollableArea {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.paymentSection {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1.5rem;
+}
+.paymentSection:last-child {
+  border-bottom: none;
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.sectionDescription {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.totalPrice {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-color);
+}
+
+.optionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.optionItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+  font-size: 1rem;
+  position: relative;
+}
+.optionItem:hover {
+  border-color: var(--accent-color);
+}
+.optionItem.selected {
+  border-color: var(--accent-color);
+  background-color: rgba(255, 99, 71, 0.15);
+}
+
+.optionIcon {
+  color: var(--text-secondary);
+}
+.optionItem.selected .optionIcon {
+  color: var(--accent-color);
+}
+
+.optionName {
+  flex-grow: 1;
+  text-align: left;
+}
+
+.checkboxIndicator {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.optionItem.selected .checkboxIndicator {
+  border-color: var(--accent-color);
+  background-color: var(--accent-color);
+}
+.optionItem.selected .checkboxIndicator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background-color: var(--background-primary);
+  border-radius: 50%;
+}
+
+.inputGroup {
+  display: flex;
+  align-items: center;
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 0 1rem;
+}
+.inputGroup span {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.changeInput {
+  width: 100%;
+  height: 50px;
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  padding-left: 0.5rem;
+}
+.changeInput:focus {
+  outline: none;
+}
+.changeInput::placeholder {
+  color: var(--text-secondary);
+}
+
+
+/* --- Footer --- */
+.footer {
+  padding: 1rem 1.5rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  background-color: var(--background-secondary);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+.confirmButton {
+  width: 100%;
+  background-color: var(--accent-color);
+  color: #fff;
+  border: none;
+  border-radius: 2rem;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.confirmButton:active {
+  transform: scale(0.98);
+}
+.confirmButton:disabled {
+  background-color: var(--text-secondary);
+  opacity: 0.5;
+  cursor: not-allowed;
+}

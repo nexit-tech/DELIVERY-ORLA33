@@ -1,28 +1,34 @@
 'use client'
-import { useState } from 'react'
+// 1. REMOVIDO useState, useEffect, supabase
 import styles from './styles.module.css'
+import { SupabaseCategory } from '@/types' // 2. Manter o tipo
 
-const categories = [
-  'Steak Cuts',
-  'Appetizers',
-  'Salads',
-  'Pasta',
-  'Cocktails'
-]
+// 3. DEFINIR NOVAS PROPS
+interface CategoryTabsProps {
+  categories: SupabaseCategory[]
+  activeCategory: string | null
+  onCategorySelect: (categoryId: string) => void
+}
 
-export default function CategoryTabs() {
-  const [activeCategory, setActiveCategory] = useState('Steak Cuts')
+export default function CategoryTabs({ 
+  categories, 
+  activeCategory, 
+  onCategorySelect 
+}: CategoryTabsProps) {
+  
+  // 4. TODA A LÓGICA DE useEffect e useState FOI REMOVIDA DAQUI
 
   return (
     <div className={styles.container}>
       <div className={styles.tabsScroll}>
+        {/* 5. Mapear as categorias recebidas via props */}
         {categories.map((category) => (
           <button
-            key={category}
-            className={`${styles.tab} ${activeCategory === category ? styles.active : ''}`}
-            onClick={() => setActiveCategory(category)}
+            key={category.id}
+            className={`${styles.tab} ${activeCategory === category.id ? styles.active : ''}`}
+            onClick={() => onCategorySelect(category.id)} // 6. Usar a função recebida via prop
           >
-            {category}
+            {category.name}
           </button>
         ))}
       </div>

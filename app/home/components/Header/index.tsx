@@ -1,13 +1,13 @@
 'use client'
-import { useState, useEffect, useContext } from 'react'
-import { Menu, User, ShoppingCart, Package, X, Sun, Moon } from 'lucide-react'
+import { useState, useEffect } from 'react' // useContext e ThemeContext removidos
+import { Menu, User, ShoppingCart, Package, X } from 'lucide-react' // Sun e Moon removidos
 import styles from './styles.module.css'
-import { ThemeContext } from '@/context/ThemeContext'
+// Importação do ThemeContext removida
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const themeContext = useContext(ThemeContext)
+  // Lógica do themeContext removida
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
@@ -34,9 +34,8 @@ export default function Header() {
     }
   }, [isMenuOpen])
 
-  if (!themeContext) return null
-
-  const { theme, toggleTheme } = themeContext
+  // Verificação if (!themeContext) removida
+  // Destructuring { theme, toggleTheme } removido
 
   return (
     <>
@@ -67,18 +66,7 @@ export default function Header() {
             <span className={styles.cartBadge}>2</span>
           </button>
 
-          {/* Botão de Tema (visível quando o menu está ABERTO) */}
-          <button
-            className={`${styles.iconButton} ${isMenuOpen ? styles.iconVisible : styles.iconHidden}`}
-            onClick={toggleTheme}
-            aria-label="Mudar tema"
-          >
-            {theme === 'light' ? (
-              <Moon size={22} strokeWidth={2.5} />
-            ) : (
-              <Sun size={22} strokeWidth={2.5} />
-            )}
-          </button>
+          {/* Botão de Tema (REMOVIDO) */}
         </div>
       </header>
 

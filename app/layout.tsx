@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { ThemeProvider } from '@/context/ThemeContext' // Importe o ThemeProvider
+import { CartProvider } from '@/context/CartContext'
+import { OrderProvider } from '@/context/OrderContext' // 1. IMPORTAR
+import { AuthProvider } from '@/context/AuthContext' // 1. IMPORTAR
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Orla 33 - Premium Delivery',
   description: 'Premium Cuts & Coastal Flavors',
   manifest: '/manifest.json',
@@ -27,21 +29,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <head>
-        <link
-          rel="apple-touch-icon"
-          sizes="180x180"
-          href="/icons/icon-192x192.png"
-        />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
-      </head>
+      <head>{/* ... */}</head>
       <body>
-        {/* Envolva a aplicação com o ThemeProvider */}
-        <ThemeProvider>{children}</ThemeProvider>
+        <AuthProvider> {/* 2. ADICIONAR O AUTHPROVIDER POR FORA */ }
+          <CartProvider>
+            <OrderProvider>
+              {children}
+            </OrderProvider>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   )

@@ -1,0 +1,327 @@
+/* app/home/components/ProductDetailsModal/styles.module.css */
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1000;
+  opacity: 0; 
+  transition: opacity 0.3s ease;
+}
+.overlay.open {
+  opacity: 1;
+}
+
+.modalContent {
+  background-color: var(--background-secondary);
+  width: 100%;
+  max-width: 430px;
+  max-height: 90vh;
+  border-top-left-radius: 1.5rem;
+  border-top-right-radius: 1.5rem;
+  box-shadow: 0 -5px 30px var(--shadow-color);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden; /* Importante para o layout */
+  transform: translateY(100%); 
+  transition: transform 0.3s ease-out;
+}
+.modalContent.open {
+  transform: translateY(0%);
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 10px var(--shadow-color);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.closeButton:active {
+    transform: scale(0.95);
+}
+
+/* --- NOVA ÁREA ROLÁVEL --- */
+.scrollableArea {
+  flex-grow: 1;
+  overflow-y: auto;
+  /* O padding do footer será o padding-bottom */
+}
+
+.productImageWrapper {
+  width: 100%;
+  height: 250px;
+  overflow: hidden;
+  position: relative;
+  /* Bordas removidas daqui para aplicar no modalContent */
+}
+.productImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.productDetails {
+  padding: 1.5rem;
+  padding-bottom: 0.5rem;
+}
+.productName {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+.productDescription {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 1rem;
+}
+.productBasePrice {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+.complementsSection {
+  padding: 0 1.5rem;
+  /* padding-bottom removido */
+}
+.complementCategory {
+  margin-bottom: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.5rem;
+}
+
+/* --- CORRIGIDO AQUI --- */
+.categoryTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: baseline;
+  /* justify-content: space-between; <-- LINHA REMOVIDA */
+  flex-wrap: wrap; /* Garante que a linha quebre corretamente */
+}
+.categorySelectionInfo {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-left: 0.5rem; /* Adiciona um espaço leve */
+}
+/* --- FIM DA CORREÇÃO --- */
+
+.optionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.optionItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+  font-size: 1rem;
+  position: relative;
+}
+.optionItem:hover {
+    border-color: var(--accent-color);
+}
+.optionItem.selected {
+  border-color: var(--accent-color);
+  background-color: rgba(255, 99, 71, 0.15);
+}
+.optionName {
+  flex-grow: 1;
+  text-align: left;
+}
+.optionPrice {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+}
+.checkboxIndicator {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    margin-left: 1rem;
+    position: relative;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+.optionItem.selected .checkboxIndicator {
+    border-color: var(--accent-color);
+    background-color: var(--accent-color);
+}
+.optionItem.selected .checkboxIndicator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background-color: var(--background-primary);
+    border-radius: 50%;
+}
+
+/* --- ESTILOS DE OBSERVAÇÃO --- */
+.observationWrapper {
+  padding: 1.5rem;
+  padding-top: 0; /* O padding-top vem do complementsSection ou details */
+  border-top: 1px solid var(--border-color);
+  margin: 1.5rem 1.5rem 0 1.5rem; /* Ajuste para o padding */
+  padding: 1.5rem 0 0 0;
+}
+
+.observationInput {
+  width: 100%;
+  min-height: 80px;
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 0.8rem 1rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+}
+.observationInput::placeholder {
+  color: var(--text-secondary);
+}
+.observationInput:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+
+/* --- FOOTER (agora fixo) --- */
+.addToCartFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  background-color: var(--background-secondary);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  gap: 1rem;
+  flex-shrink: 0; /* Impede que o footer encolha */
+}
+
+.quantityControl {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--background-primary);
+  border-radius: 2rem;
+  border: 1px solid var(--border-color);
+  height: 50px; /* Altura fixa */
+  padding: 0 0.5rem;
+}
+
+.quantityControl button {
+  background: transparent;
+  border: none;
+  color: var(--accent-color);
+  font-size: 1.5rem;
+  font-weight: 500;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  border-radius: 50%;
+}
+
+.quantityControl button:disabled {
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.quantityControl button:active:not(:disabled) {
+    transform: scale(0.9);
+}
+
+.quantityControl span {
+  color: var(--text-primary);
+  font-size: 1.1rem; /* Ajustado */
+  font-weight: 600;
+  margin: 0 0.5rem;
+  min-width: 20px; /* Garante espaço */
+  text-align: center;
+}
+
+.addToCartButton {
+  flex-grow: 1;
+  background-color: var(--accent-color);
+  color: #fff;
+  border: none;
+  border-radius: 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  height: 50px; /* Altura fixa (mesma do quantityControl) */
+  padding: 0 1.5rem;
+}
+
+.addToCartButton:hover {
+  background-color: var(--accent-color-hover);
+}
+
+.addToCartButton:active {
+    transform: scale(0.98);
+}
+
+/* Scrollbar styling */
+.scrollableArea::-webkit-scrollbar {
+  width: 8px;
+}
+.scrollableArea::-webkit-scrollbar-track {
+  background: var(--background-primary);
+  border-radius: 10px;
+}
+.scrollableArea::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+.scrollableArea::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
