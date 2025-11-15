@@ -25,10 +25,9 @@ export default function ProductDetailsModal({
   const [quantity, setQuantity] = useState(1)
   const [observation, setObservation] = useState("")
   
-  // --- ESTADOS E USEEFFECT REMOVIDOS ---
+  // --- ESTADOS REMOVIDOS ---
   // const [complements, setComplements] = useState<ComplementCategory[]>([])
   // const [isLoadingComplements, setIsLoadingComplements] = useState(false)
-  // O useEffect que buscava dados foi todo REMOVIDO
   
   const [selectedComplements, setSelectedComplements] = useState<{
     [categoryId: string]: ComplementOption[]
@@ -47,11 +46,10 @@ export default function ProductDetailsModal({
     return () => clearTimeout(timer);
   }, []);
 
-  // --- (CORREÇÃO) EFEITO PARA INICIAR OS COMPLEMENTOS ---
-  // Este useEffect agora SÓ define as opções padrão
-  // quando os complementos chegam via props.
+  // --- NOVO USEEFFECT: APENAS PARA INICIAR OS COMPLEMENTOS SE RECEBIDOS ---
   useEffect(() => {
-    if (complements && complements.length > 0) {
+    // Só tenta definir as opções se o modal não estiver em loading E tiver complementos
+    if (!isLoadingComplements && complements && complements.length > 0) {
       const initialComplements: { [categoryId: string]: ComplementOption[] } = {}
       complements.forEach(category => {
         if (category.type === 'single' && category.options.length > 0) {
@@ -61,11 +59,12 @@ export default function ProductDetailsModal({
         }
       })
       setSelectedComplements(initialComplements)
-    } else {
-      setSelectedComplements({}) // Limpa se não houver complementos
+    } else if (complements && complements.length === 0 && !isLoadingComplements) {
+       // Se não houver complementos (e não estiver a carregar), limpa as seleções.
+       setSelectedComplements({}) 
     }
-  }, [complements]) // Roda quando os complementos (props) mudam
-  // --- FIM DA CORREÇÃO ---
+  }, [complements, isLoadingComplements]) 
+  // --- FIM DO NOVO USEEFFECT ---
 
 
   const handleClose = () => {
@@ -88,7 +87,6 @@ export default function ProductDetailsModal({
       if (type === 'single') {
         return { ...prev, [categoryId]: [option] }
       } else {
-        // Lógica de seleção múltipla
         const isSelected = currentSelections.some((s) => s.id === option.id)
         let newSelections
         if (isSelected) {
@@ -125,7 +123,7 @@ export default function ProductDetailsModal({
       price: product.price,
       image: product.image_url || '',
       category: '',
-      complements: complements, // Passa os complementos recebidos
+      complements: complements, 
     }
     // @ts-ignore
     addToCart(productDataForCart, quantity, selectedComplements, observation) 
@@ -206,7 +204,7 @@ export default function ProductDetailsModal({
             <span className={styles.productBasePrice}>${product.price.toFixed(2)}</span>
           </div>
 
-          {/* Renderizar complementos reais (agora vêm das props) */}
+          {/* Renderizar complementos reais */}
           {isLoadingComplements ? (
             <p style={{textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)'}}>A carregar opções...</p>
           ) : (
