@@ -19,7 +19,7 @@ import AddressFormModal from './components/AddressFormModal'
 import ChangePasswordModal from './components/ChangePasswordModal'
 import ConfirmDeleteModal from './components/ConfirmDeleteModal'
 import { supabase } from '@/lib/supabaseClient'
-// 1. IMPORTAR 'Order'
+// Import agora está correto (AppUser existe)
 import { DisplayProduct, SupabaseProduct, SupabaseCombo, PaymentMethod, Address, SupabaseCategory, AppUser, Order } from '@/types'
 import styles from './styles.module.css'
 
@@ -43,7 +43,7 @@ export default function HomePage() {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false)
   const [addressToDelete, setAddressToDelete] = useState<string | null>(null)
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false) // (Mantido de passos anteriores)
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false)
 
   // --- Estado dos Dados (com filtro) ---
   const [allProducts, setAllProducts] = useState<DisplayProduct[]>([]) 
@@ -100,7 +100,9 @@ export default function HomePage() {
         category_id: p.category_id,
       }))
       
-      const formattedCombos: DisplayProduct[] = (combos || []).map((c: any) => ({
+      // --- CORREÇÃO AQUI (Linha 124) ---
+      // (c: any) virou (c: SupabaseCombo)
+      const formattedCombos: DisplayProduct[] = (combos || []).map((c: SupabaseCombo) => ({
         id: c.id,
         name: c.name,
         description: c.description || null,
@@ -209,7 +211,6 @@ export default function HomePage() {
     handleOpenPayment()
   }
 
-  // 2. FUNÇÃO ATUALIZADA (async e retorna Promise<Order>)
   const handleConfirmOrder = async (paymentMethod: PaymentMethod, changeFor?: number): Promise<Order> => {
     if (!selectedAddressForOrder) {
       alert("Erro: Nenhum endereço selecionado.");
@@ -221,11 +222,9 @@ export default function HomePage() {
     try {
       const subtotal = cartItems.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
       
-      // 3. Espera o addOrder (que agora retorna o pedido)
       // @ts-ignore
       const newOrder = await addOrder(cartItems, subtotal, paymentMethod, selectedAddressForOrder, user, changeFor);
       
-      // 4. Se não for PIX, limpa o carrinho e fecha
       if (paymentMethod !== 'pix') {
         clearCart();
         handleClosePayment();
@@ -233,7 +232,7 @@ export default function HomePage() {
         setSelectedAddressForOrder(null);
       }
       
-      return newOrder; // 5. RETORNA O PEDIDO (para o Modal PIX usar o ID)
+      return newOrder; 
 
     } catch (error: any) {
       console.error("Erro ao confirmar pedido:", error);

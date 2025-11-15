@@ -75,7 +75,6 @@ export interface ComplementCategory {
 
 // --- Tipos de Contextos (Auth, Cart, Order) ---
 
-// 1. ADICIONADO O NOVO STATUS 'archived'
 export type OrderStatus = 'pending' | 'preparing' | 'delivering' | 'completed' | 'cancelled' | 'archived'
 export type PaymentMethod = 'credit' | 'debit' | 'money' | 'pix' | 'none'
 
@@ -88,7 +87,9 @@ export interface Address {
   complement?: string
 }
 
-export interface User {
+// --- CORREÇÃO AQUI ---
+// Renomeado de 'User' para 'AppUser' para bater com o resto do código
+export interface AppUser {
   id: string
   name: string
   email: string
@@ -124,5 +125,5 @@ export interface Order {
   paymentMethod: PaymentMethod
   changeFor?: number
   shippingAddress: Address
-  user: User | null
+  user: AppUser | null // <-- MUDANÇA BÔNUS: Já usa o 'AppUser' corrigido
 }
