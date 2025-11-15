@@ -1,7 +1,8 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
-import { CartItem, Order, OrderStatus, PaymentMethod, Address, User } from '@/types'
+// --- CORREÇÃO 1: 'User' foi trocado para 'AppUser' ---
+import { CartItem, Order, OrderStatus, PaymentMethod, Address, AppUser } from '@/types' 
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/context/AuthContext' 
 
@@ -12,7 +13,8 @@ interface OrderContextType {
     totalPrice: number, 
     paymentMethod: PaymentMethod, 
     shippingAddress: Address,
-    user: User | null,
+    // --- CORREÇÃO 2: 'User' foi trocado para 'AppUser' ---
+    user: AppUser | null,
     changeFor?: number
   ) => Promise<Order> 
   confirmDelivery: (orderId: string) => Promise<void>
@@ -20,7 +22,8 @@ interface OrderContextType {
 
 export const OrderContext = createContext<OrderContextType | undefined>(undefined)
 
-const formatOrderFromDB = (order: any, user: User | null): Order => ({
+// --- CORREÇÃO 3: 'User' foi trocado para 'AppUser' ---
+const formatOrderFromDB = (order: any, user: AppUser | null): Order => ({
   id: order.id,
   items: order.items,
   totalPrice: order.total_price, 
@@ -57,8 +60,6 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         return
       }
       
-      // --- CORREÇÃO AQUI (Linha 53) ---
-      // (data.map(order => ...)) virou (data.map((order: any) => ...))
       const formattedOrders: Order[] = data.map((order: any) => formatOrderFromDB(order, user));
       setOrders(formattedOrders)
     }
@@ -106,7 +107,8 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     totalPrice: number, 
     paymentMethod: PaymentMethod, 
     shippingAddress: Address,
-    user: User | null,
+    // --- CORREÇÃO 4: 'User' foi trocado para 'AppUser' ---
+    user: AppUser | null,
     changeFor?: number
   ): Promise<Order> => {
     
