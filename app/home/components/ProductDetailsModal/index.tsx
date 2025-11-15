@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabaseClient'
-import { DisplayProduct, ComplementCategory, ComplementOption, SupabaseComboGroup, SupabaseComboGroupItem } from '@/types'
+// import { supabase } from '@/lib/supabaseClient' <-- REMOVIDO
+import { DisplayProduct, ComplementCategory, ComplementOption } from '@/types'
 import { X } from 'lucide-react'
 import styles from './styles.module.css'
 import { useCart } from '@/context/CartContext'
@@ -10,15 +10,26 @@ import { useCart } from '@/context/CartContext'
 interface ProductDetailsModalProps {
   product: DisplayProduct
   onClose: () => void
+  complements: ComplementCategory[] // <-- NOVA PROP
+  isLoadingComplements: boolean // <-- NOVA PROP
 }
 
-export default function ProductDetailsModal({ product, onClose }: ProductDetailsModalProps) {
+export default function ProductDetailsModal({ 
+  product, 
+  onClose, 
+  complements, 
+  isLoadingComplements 
+}: ProductDetailsModalProps) {
+  
   const [isOpen, setIsOpen] = useState(false) 
   const [quantity, setQuantity] = useState(1)
   const [observation, setObservation] = useState("")
   
-  const [complements, setComplements] = useState<ComplementCategory[]>([])
-  const [isLoadingComplements, setIsLoadingComplements] = useState(false)
+  // --- ESTADOS E USEEFFECT REMOVIDOS ---
+  // const [complements, setComplements] = useState<ComplementCategory[]>([])
+  // const [isLoadingComplements, setIsLoadingComplements] = useState(false)
+  // O useEffect que buscava dados foi todo REMOVIDO
+  
   const [selectedComplements, setSelectedComplements] = useState<{
     [categoryId: string]: ComplementOption[]
   }>({})
@@ -26,8 +37,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
   const modalRef = useRef<HTMLDivElement>(null)
   const { addToCart } = useCart() 
 
-  // --- 1. NOVOS ESTADOS E REFs PARA O "ARRASTAR" ---
-  const scrollRef = useRef<HTMLDivElement>(null) // Ref para a área de scroll
+  const scrollRef = useRef<HTMLDivElement>(null) 
   const [isDragging, setIsDragging] = useState(false)
   const [dragStartY, setDragStartY] = useState<number | null>(null)
 
@@ -37,59 +47,13 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
     return () => clearTimeout(timer);
   }, []);
 
-  // ... (useEffect de buscar complementos permanece o mesmo) ...
+  // --- (CORREÇÃO) EFEITO PARA INICIAR OS COMPLEMENTOS ---
+  // Este useEffect agora SÓ define as opções padrão
+  // quando os complementos chegam via props.
   useEffect(() => {
-    const fetchComplements = async () => {
-      if (product.type !== 'combo') {
-        setIsLoadingComplements(false)
-        return
-      }
-      setIsLoadingComplements(true)
-      
-      const { data: groups, error: groupsError } = await supabase
-        .from('combo_groups')
-        .select('*')
-        .eq('combo_id', product.id)
-
-      if (groupsError) {
-        console.error("Erro ao buscar grupos:", groupsError)
-        setIsLoadingComplements(false)
-        return
-      }
-
-      const categories: ComplementCategory[] = await Promise.all(
-        groups.map(async (group: SupabaseComboGroup) => {
-          
-          const { data: items, error: itemsError } = await supabase
-            .from('combo_group_items')
-            .select(`
-              id,
-              additional_price,
-              products ( name, description ) 
-            `)
-            .eq('group_id', group.id)
-
-          if (itemsError) console.error("Erro ao buscar itens do grupo:", itemsError)
-
-          const options: ComplementOption[] = (items || []).map((item: any) => ({
-            id: item.id,
-            name: item.products.name,
-            price: item.additional_price,
-          }))
-
-          return {
-            id: group.id,
-            name: group.name,
-            type: 'single', // Hardcoded
-            maxSelection: 1, // Hardcoded
-            options: options,
-          }
-        })
-      )
-      setComplements(categories)
-      
+    if (complements && complements.length > 0) {
       const initialComplements: { [categoryId: string]: ComplementOption[] } = {}
-      categories.forEach(category => {
+      complements.forEach(category => {
         if (category.type === 'single' && category.options.length > 0) {
           initialComplements[category.id] = [category.options[0]]
         } else {
@@ -97,11 +61,11 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
         }
       })
       setSelectedComplements(initialComplements)
-      
-      setIsLoadingComplements(false)
+    } else {
+      setSelectedComplements({}) // Limpa se não houver complementos
     }
-    fetchComplements()
-  }, [product])
+  }, [complements]) // Roda quando os complementos (props) mudam
+  // --- FIM DA CORREÇÃO ---
 
 
   const handleClose = () => {
@@ -109,7 +73,6 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
     setTimeout(onClose, 300);
   }
 
-  // ... (handleQuantityChange, handleComplementSelection, etc. permanecem iguais) ...
   const handleQuantityChange = (delta: number) => {
     setQuantity((prev) => Math.max(1, prev + delta))
   }
@@ -125,7 +88,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
       if (type === 'single') {
         return { ...prev, [categoryId]: [option] }
       } else {
-        // Lógica de seleção múltipla (como estava)
+        // Lógica de seleção múltipla
         const isSelected = currentSelections.some((s) => s.id === option.id)
         let newSelections
         if (isSelected) {
@@ -162,22 +125,18 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
       price: product.price,
       image: product.image_url || '',
       category: '',
-      complements: complements,
+      complements: complements, // Passa os complementos recebidos
     }
     // @ts-ignore
     addToCart(productDataForCart, quantity, selectedComplements, observation) 
     handleClose()
   }
 
-  // --- 2. LÓGICA DO "ARRASTAR PARA FECHAR" ---
-
+  // Lógica do "arrastar para fechar"
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Só inicia o "arraste" se o scroll da área interna estiver no topo
     if (scrollRef.current && scrollRef.current.scrollTop === 0) {
       setIsDragging(true);
-      setDragStartY(e.clientY); // Pega a posição Y inicial
-      
-      // Remove a transição CSS para o "arraste" ser 1:1 (direto)
+      setDragStartY(e.clientY); 
       if (modalRef.current) {
         modalRef.current.style.transition = 'none';
       }
@@ -186,39 +145,28 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging || dragStartY === null || !modalRef.current) return;
-
     const currentY = e.clientY;
     const deltaY = currentY - dragStartY;
-
-    // Só permite arrastar para BAIXO (deltaY > 0)
     if (deltaY > 0) {
-      // Aplica a transformação de "arraste"
       modalRef.current.style.transform = `translateY(${deltaY}px)`;
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging || dragStartY === null || !modalRef.current) return;
-
     setIsDragging(false);
     setDragStartY(null);
-
-    // Readiciona a transição para a animação de fechar ou de "snap back"
     modalRef.current.style.transition = 'transform 0.3s ease-out';
-
     const currentY = e.clientY;
     const deltaY = currentY - dragStartY;
-    const dragThreshold = 100; // Precisa arrastar 100px para fechar
-
+    const dragThreshold = 100; 
     if (deltaY > dragThreshold) {
-      handleClose(); // Chama a função de fechar
+      handleClose(); 
     } else {
-      // "Snap back" - volta à posição original
       modalRef.current.style.transform = 'translateY(0)';
     }
   };
 
-  // O handleOverlayClick é para o fundo escuro, mantemos
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       handleClose()
@@ -233,11 +181,9 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
       <div 
         className={`${styles.modalContent} ${isOpen ? styles.open : ''}`} 
         ref={modalRef}
-        // --- 3. ADICIONAR OS HANDLERS DE EVENTO ---
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        // Se o mouse/dedo sair do modal, cancela o arraste
         onPointerLeave={handlePointerUp} 
       >
         <button className={styles.closeButton} onClick={handleClose} aria-label="Fechar">
@@ -246,7 +192,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
         
         <div 
           className={styles.scrollableArea}
-          ref={scrollRef} // --- 4. CONECTAR O REF DE SCROLL ---
+          ref={scrollRef} 
         >
           <div className={styles.productImageWrapper}>
             <img src={product.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop'} alt={product.name} className={styles.productImage} />
@@ -260,7 +206,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
             <span className={styles.productBasePrice}>${product.price.toFixed(2)}</span>
           </div>
 
-          {/* Renderizar complementos reais */}
+          {/* Renderizar complementos reais (agora vêm das props) */}
           {isLoadingComplements ? (
             <p style={{textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)'}}>A carregar opções...</p>
           ) : (

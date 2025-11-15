@@ -20,9 +20,10 @@ interface OrderContextType {
 
 export const OrderContext = createContext<OrderContextType | undefined>(undefined)
 
+// formatOrderFromDB AGORA SÓ É USADO PARA PEDIDOS NOVOS (com 'items')
 const formatOrderFromDB = (order: any, user: AppUser | null): Order => ({
   id: order.id,
-  items: order.items,
+  items: order.items, // 'items' VÊM DA BUSCA INICIAL ou do ADDORDER
   totalPrice: order.total_price, 
   status: order.status,
   createdAt: new Date(order.created_at),
@@ -43,6 +44,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       return
     }
 
+    // A Busca Inicial (fetchOrders) funciona bem
     const fetchOrders = async () => {
       console.log("A buscar pedidos do utilizador:", user.id)
       const { data, error } = await supabase
@@ -73,26 +75,37 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
           table: 'orders',
           filter: `profile_id=eq.${user.id}`
         },
-        // --- CORREÇÃO 1: O LISTENER VAI IGNORAR O 'archived' ---
+        // --- CORREÇÃO: O LISTENER VAI "MESCLAR" O ESTADO ---
         (payload) => {
           console.log('Status do pedido atualizado (listener)!', payload.new);
-          const updatedOrder = formatOrderFromDB(payload.new, user);
+          
+          // O 'payload.new' SÓ TEM o ID e o novo STATUS
+          const newStatus = payload.new.status;
+          const orderId = payload.new.id;
 
-          // Se o status for 'archived', não fazemos nada.
-          // A função 'confirmDelivery' (o clique) vai tratar de remover.
-          if (updatedOrder.status === 'archived') {
-            console.log('Listener a ignorar status "archived".');
-            return; // Ignora a atualização para evitar a "corrida"
+          // Se o status for 'archived', removemos o pedido da lista
+          if (newStatus === 'archived') {
+            console.log('Listener a remover pedido "archived".');
+             setOrders((currentOrders) => 
+               currentOrders.filter(o => o.id !== orderId)
+             );
+            return; 
           }
           
-          // Atualiza todos os outros status (pending, preparing, completed, etc.)
+          // SE FOR OUTRO STATUS ('preparing', 'delivering', 'completed'):
+          // Nós ATUALIZAMOS o pedido, mas preservando os 'items'
           setOrders((currentOrders) => 
-            currentOrders.map(o => 
-              o.id === updatedOrder.id ? updatedOrder : o
+            currentOrders.map(order => 
+              // Se o ID for o mesmo...
+              order.id === orderId 
+                // ...mantemos o pedido antigo (...order) e SÓ mudamos o status
+                ? { ...order, status: newStatus } 
+                // ...senão, mantemos o pedido como está
+                : order
             )
           );
         }
-        // --- FIM DA CORREÇÃO 1 ---
+        // --- FIM DA CORREÇÃO ---
       )
       .subscribe();
 
@@ -104,7 +117,6 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
 
   const addOrder = async (
-    // ... (função addOrder não muda) ...
     items: CartItem[], 
     totalPrice: number, 
     paymentMethod: PaymentMethod, 
@@ -115,12 +127,12 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     
     const newOrderForSupabase = {
       profile_id: user ? user.id : null,
-      items: items, 
+      items: items, // 'items' SÃO ENVIADOS AQUI
       total_price: totalPrice,
       shipping_address: shippingAddress, 
       payment_method: paymentMethod,
       change_for: changeFor || null,
-      status: 'pending'
+      status: 'pending' // Começa como pendente
     }
 
     try {
@@ -133,8 +145,10 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error
       if (!savedOrder) throw new Error("Pedido não foi salvo.")
 
+      // O 'savedOrder' retorna do Supabase com os 'items'
       const newOrderForLocalState = formatOrderFromDB(savedOrder, user);
       
+      // Adiciona o novo pedido (com 'items') ao estado local
       setOrders((prevOrders) => [newOrderForLocalState, ...prevOrders])
       
       return newOrderForLocalState; 
@@ -145,7 +159,8 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  // --- CORREÇÃO 2: A FUNÇÃO DE CLIQUE ATUALIZA O ESTADO ---
+  // Esta função não é mais usada (o Cron Job faz o trabalho),
+  // mas vamos mantê-la correta.
   const confirmDelivery = async (orderId: string) => {
     try {
       console.log(`A arquivar pedido (clique): ${orderId}`);
@@ -159,19 +174,16 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
 
-      // Adicionamos a atualização de estado local DE VOLTA
-      // Agora é o clique (e não o listener) que remove o item.
-      console.log(`A remover pedido do estado local: ${orderId}`);
-      setOrders((currentOrders) => 
-        currentOrders.filter(order => order.id !== orderId)
-      );
+      // O listener (agora corrigido) vai tratar de remover
+      // setOrders((currentOrders) => 
+      //   currentOrders.filter(order => order.id !== orderId)
+      // ); // <-- REMOVIDO (DE NOVO) para deixar o listener fazer
 
     } catch (err) {
       console.error("Erro em confirmDelivery:", err);
       throw err;
     }
   }
-  // --- FIM DA CORREÇÃO 2 ---
 
 
   return (

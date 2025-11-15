@@ -10,10 +10,11 @@
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  z-index: 1000;
+  z-index: 1001; /* <-- CORRIGIDO AQUI */
   opacity: 0; 
   transition: opacity 0.3s ease;
 }
+
 .overlay.open {
   opacity: 1;
 }

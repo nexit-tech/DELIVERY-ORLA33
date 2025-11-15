@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  // ... (o resto do arquivo: login, logout, register, etc. não muda) ...
+  // ... (login, register, etc. não mudam) ...
   const login = async (email: string, pass: string) => {
     setIsLoading(true);
     try {
@@ -105,14 +105,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  // --- FUNÇÃO DE LOGOUT CORRIGIDA ---
   const logout = async () => {
-    setIsLoading(true)
+    // setIsLoading(true) // <-- REMOVIDO
     const { error } = await supabase.auth.signOut()
     if (error) {
       console.error("Erro ao fazer logout:", error)
     }
-    setIsLoading(false)
+    // setIsLoading(false) // <-- REMOVIDO
   }
+  // --- FIM DA CORREÇÃO ---
 
   const register = async (
     name: string, 

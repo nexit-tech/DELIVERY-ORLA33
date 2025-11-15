@@ -51,25 +51,35 @@ export default function PaymentModal({
   const handleConfirm = async () => {
     if (selectedPayment === 'none') return;
 
-    // --- Fluxo de Dinheiro / Cartão (normal) ---
+    // --- Fluxo de Dinheiro / Cartão (CORRIGIDO) ---
     if (selectedPayment !== 'pix') {
       const changeAmount = selectedPayment === 'money' ? parseFloat(changeFor) : undefined;
       if (selectedPayment === 'money' && changeAmount && changeAmount < totalPrice) {
           alert('O valor do troco deve ser maior ou igual ao total do pedido.');
           return;
       }
-      // Chama a função, mas não faz mais nada (a page.tsx cuida de fechar)
-      onConfirmOrder(selectedPayment, changeAmount);
-      return;
+      
+      // --- CORREÇÃO ADICIONADA AQUI ---
+      try {
+        // Agora esperamos (await) a função terminar.
+        // A 'page.tsx' vai fechar este modal e abrir o de pedidos.
+        await onConfirmOrder(selectedPayment, changeAmount);
+      } catch (error) {
+        // Se 'onConfirmOrder' falhar, o 'finally' na page.tsx
+        // já vai desligar o 'isLoading', mas precisamos avisar o user.
+        console.error("Erro ao confirmar pedido (Cartão/Dinheiro):", error);
+        alert("Erro ao confirmar o pedido. Tente novamente.");
+      }
+      return; // Finaliza a função aqui
+      // --- FIM DA CORREÇÃO ---
     }
 
-    // --- Fluxo de PIX (Novo) ---
+    // --- Fluxo de PIX (Original) ---
     setIsGeneratingPix(true);
     setPixError(null);
     
     try {
       // 1. Salva o pedido no Supabase PRIMEIRO (status: 'pending')
-      // A função onConfirmOrder agora retorna o pedido que foi criado
       const newOrder = await onConfirmOrder(selectedPayment);
       
       // 2. Com o ID do pedido, gera o PIX no nosso backend

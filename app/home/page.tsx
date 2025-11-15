@@ -18,10 +18,11 @@ import ProfileModal from './components/ProfileModal'
 import AddressFormModal from './components/AddressFormModal'
 import ChangePasswordModal from './components/ChangePasswordModal'
 import ConfirmDeleteModal from './components/ConfirmDeleteModal'
-import { supabase } from '@/lib/supabaseClient'
-// Import agora está correto (AppUser existe)
-import { DisplayProduct, SupabaseProduct, SupabaseCombo, PaymentMethod, Address, SupabaseCategory, AppUser, Order } from '@/types'
+import { supabase } from '@/lib/supabaseClient' // <-- PRECISAMOS DESTE IMPORT
+// Tipos de produto e complementos
+import { DisplayProduct, SupabaseProduct, SupabaseCombo, PaymentMethod, Address, SupabaseCategory, AppUser, Order, ComplementCategory, SupabaseComboGroup, ComplementOption } from '@/types' 
 import styles from './styles.module.css'
+// O MenuContainer não é mais necessário, voltamos ao original
 
 const PROMO_CATEGORY_ID = 'virtual_promo_id'
 
@@ -45,16 +46,21 @@ export default function HomePage() {
   const [addressToDelete, setAddressToDelete] = useState<string | null>(null)
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
 
-  // --- Estado dos Dados (com filtro) ---
+  // --- Estado dos Dados (Menu) ---
   const [allProducts, setAllProducts] = useState<DisplayProduct[]>([]) 
   const [filteredProducts, setFilteredProducts] = useState<DisplayProduct[]>([]) 
   const [categories, setCategories] = useState<SupabaseCategory[]>([])
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [isLoadingMenu, setIsLoadingMenu] = useState(true)
 
+  // --- (CORREÇÃO) ESTADOS DOS COMPLEMENTOS VIVEM AQUI ---
+  const [complements, setComplements] = useState<ComplementCategory[]>([])
+  const [isLoadingComplements, setIsLoadingComplements] = useState(false)
+  // --- FIM DA CORREÇÃO ---
+
   const [selectedAddressForOrder, setSelectedAddressForOrder] = useState<Address | null>(null)
 
-  // EFEITO PARA BUSCAR OS DADOS (Produtos, Combos E Categorias)
+  // EFEITO PARA BUSCAR O MENU (Produtos e Categorias)
   useEffect(() => {
     const fetchMenu = async () => {
       setIsLoadingMenu(true)
@@ -100,8 +106,6 @@ export default function HomePage() {
         category_id: p.category_id,
       }))
       
-      // --- CORREÇÃO AQUI (Linha 124) ---
-      // (c: any) virou (c: SupabaseCombo)
       const formattedCombos: DisplayProduct[] = (combos || []).map((c: SupabaseCombo) => ({
         id: c.id,
         name: c.name,
@@ -144,9 +148,74 @@ export default function HomePage() {
       isPaymentOpen, isAddressModalOpen, isProfileModalOpen, 
       isAddressFormOpen, isChangePasswordOpen, isConfirmDeleteOpen])
 
-  // --- Funções de Abertura/Fecho de Modals ---
-  const handleProductClick = (product: DisplayProduct) => { setSelectedProduct(product); setIsProductDetailsOpen(true) }
-  const handleCloseProductDetails = () => { setIsProductDetailsOpen(false); setSelectedProduct(null) }
+  // --- (CORREÇÃO) FUNÇÃO PARA BUSCAR COMPLEMENTOS ---
+  const fetchComplements = async (product: DisplayProduct) => {
+    if (product.type !== 'combo') {
+      setComplements([])
+      setIsLoadingComplements(false)
+      return
+    }
+
+    setIsLoadingComplements(true)
+    
+    try {
+      const { data: groups, error: groupsError } = await supabase
+        .from('combo_groups')
+        .select('*')
+        .eq('combo_id', product.id)
+
+      if (groupsError) throw groupsError
+
+      const categories: ComplementCategory[] = await Promise.all(
+        groups.map(async (group: SupabaseComboGroup) => {
+          const { data: items, error: itemsError } = await supabase
+            .from('combo_group_items')
+            .select(`id, additional_price, products ( name, description )`)
+            .eq('group_id', group.id)
+
+          if (itemsError) console.error("Erro ao buscar itens:", itemsError)
+
+          const options: ComplementOption[] = (items || []).map((item: any) => ({
+            id: item.id,
+            name: item.products.name,
+            price: item.additional_price,
+          }))
+
+          return {
+            id: group.id,
+            name: group.name,
+            type: 'single', // Hardcoded
+            maxSelection: 1, // Hardcoded
+            options: options,
+          }
+        })
+      )
+      setComplements(categories)
+    } catch (err) {
+      console.error("Erro ao buscar complementos:", err)
+      setComplements([]) // Limpa em caso de erro
+    } finally {
+      setIsLoadingComplements(false)
+    }
+  }
+
+  // --- (CORREÇÃO) FUNÇÕES DE ABRIR/FECHAR MODAL DE PRODUTO ---
+  const handleProductClick = (product: DisplayProduct) => { 
+    setSelectedProduct(product)
+    setIsProductDetailsOpen(true)
+    fetchComplements(product) // <-- FAZ O "GET" AQUI
+  }
+  
+  const handleCloseProductDetails = () => { 
+    setIsProductDetailsOpen(false)
+    // Limpa os dados do modal para a próxima abertura
+    setTimeout(() => {
+      setSelectedProduct(null)
+      setComplements([])
+    }, 300) // Espera a animação de fechar
+  }
+  
+  // --- Funções de Abertura/Fecho (Outros Modals) ---
   const handleOpenCart = () => setIsCartOpen(true)
   const handleCloseCart = () => setIsCartOpen(false)
   const handleOpenOrders = () => setIsOrdersOpen(true)
@@ -155,15 +224,12 @@ export default function HomePage() {
   const handleClosePayment = () => setIsPaymentOpen(false)
   const handleOpenAddress = () => setIsAddressModalOpen(true)
   const handleCloseAddress = () => setIsAddressModalOpen(false)
-  
   const handleOpenLogin = () => setIsLoginOpen(true)
   const handleCloseLogin = () => setIsLoginOpen(false)
   const handleOpenProfile = () => setIsProfileModalOpen(true)
   const handleCloseProfile = () => setIsProfileModalOpen(false)
-  
   const handleOpenAddressForm = () => setIsAddressFormOpen(true)
   const handleCloseAddressForm = () => setIsAddressFormOpen(false)
-  
   const handleOpenChangePassword = () => setIsChangePasswordOpen(true)
   const handleCloseChangePassword = () => setIsChangePasswordOpen(false)
   
@@ -190,7 +256,6 @@ export default function HomePage() {
     handleCloseAddressForm()
   }
 
-  // --- LÓGICA DO BOTÃO "PERFIL" ---
   const handleProfileClick = () => {
     if (user) {
       handleOpenProfile()
@@ -214,7 +279,7 @@ export default function HomePage() {
   const handleConfirmOrder = async (paymentMethod: PaymentMethod, changeFor?: number): Promise<Order> => {
     if (!selectedAddressForOrder) {
       alert("Erro: Nenhum endereço selecionado.");
-      throw new Error("Endereço não selecionado"); // Lança erro
+      throw new Error("Endereço não selecionado");
     }
     
     setIsPlacingOrder(true);
@@ -237,13 +302,12 @@ export default function HomePage() {
     } catch (error: any) {
       console.error("Erro ao confirmar pedido:", error);
       alert(`Falha ao criar o pedido: ${error.message}`);
-      throw error; // Lança o erro
+      throw error; 
     } finally {
       setIsPlacingOrder(false);
     }
   }
   
-  // LÓGICA DO MODAL DE PERFIL
   const handleEditProfile = () => {
     handleCloseProfile()
     handleOpenChangePassword()
@@ -279,7 +343,6 @@ export default function HomePage() {
         </div>
       </main> 
 
-      {/* Navbar e Modals (irmãos do <main>) */}
       <Navbar 
         onCartClick={handleOpenCart} 
         onOrdersClick={handleOpenOrders}
@@ -288,10 +351,13 @@ export default function HomePage() {
 
       {/* --- RENDERIZAÇÃO DE TODOS OS MODALS --- */}
 
+      {/* (CORREÇÃO) O Modal agora recebe os complementos como props */}
       {isProductDetailsOpen && selectedProduct && (
         <ProductDetailsModal
           product={selectedProduct}
           onClose={handleCloseProductDetails}
+          complements={complements}
+          isLoadingComplements={isLoadingComplements}
         />
       )}
 
@@ -302,6 +368,7 @@ export default function HomePage() {
         />
       )}
       
+      {/* ... (resto dos modals) ... */}
       {isAddressModalOpen && (
         <AddressModal
           onClose={handleCloseAddress}
