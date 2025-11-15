@@ -19,7 +19,6 @@ export interface SupabaseProduct {
   created_at?: string
 }
 
-// (Assume que adicionaste description e image_url à tua tabela 'combos')
 export interface SupabaseCombo {
   id: string
   name: string
@@ -32,10 +31,8 @@ export interface SupabaseCombo {
 export interface SupabaseComboGroup {
   id: string
   combo_id: string
-  name: string // Ex: "Escolha seu molho"
+  name: string
   created_at?: string
-  // NOTA: Adicionar 'type' ('single'/'multiple') e 'max_selection' (number)
-  // ao teu schema 'combo_groups' no Supabase para o modal funcionar 100%
   type?: 'single' | 'multiple'
   max_selection?: number
 }
@@ -46,14 +43,12 @@ export interface SupabaseComboGroupItem {
   product_id: string
   additional_price: number
   created_at?: string
-  // O Supabase faz o join disto
   products: Pick<SupabaseProduct, 'name' | 'description'> 
 }
 
 
 // --- TIPOS DO PROTÓTIPO (Para o UI) ---
 
-// Este é o tipo que o ProductCard vai usar
 export interface DisplayProduct {
   id: string
   name: string
@@ -61,32 +56,32 @@ export interface DisplayProduct {
   price: number
   image_url: string | null
   type: 'product' | 'combo'
-  category_id: string | null // <-- CAMPO-CHAVE PARA O FILTRO
+  category_id: string | null
 }
 
-// Tipos de Complementos (adaptados do Supabase)
 export interface ComplementOption {
-  id: string // Vem do product_id no combo_group_items
+  id: string
   name: string
-  price: number // Vem do additional_price no combo_group_items
+  price: number
 }
 
 export interface ComplementCategory {
-  id: string // Vem do combo_group (group_id)
-  name: string // Vem do combo_group
-  type: 'single' | 'multiple' // Assumindo que o user adicionará no Supabase
-  maxSelection: number // Assumindo que o user adicionará no Supabase
+  id: string
+  name: string
+  type: 'single' | 'multiple'
+  maxSelection: number
   options: ComplementOption[]
 }
 
 // --- Tipos de Contextos (Auth, Cart, Order) ---
 
-export type OrderStatus = 'pending' | 'preparing' | 'delivering' | 'completed' | 'cancelled'
+// 1. ADICIONADO O NOVO STATUS 'archived'
+export type OrderStatus = 'pending' | 'preparing' | 'delivering' | 'completed' | 'cancelled' | 'archived'
 export type PaymentMethod = 'credit' | 'debit' | 'money' | 'pix' | 'none'
 
 export interface Address {
   id: string
-  name: string // Ex: "Casa", "Trabalho"
+  name: string
   street: string
   number: string
   neighborhood: string
@@ -101,14 +96,12 @@ export interface User {
   addresses: Address[]
 }
 
-// O `Product` aqui é o tipo "antigo" que o CartContext espera
-// O `ProductDetailsModal` adapta o `DisplayProduct` para este tipo ao adicionar
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
-  image: string; // no `addToCart` usamos `image_url` para isto
+  image: string;
   category: string;
   complements?: ComplementCategory[];
 }

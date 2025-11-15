@@ -14,8 +14,8 @@ interface OrderContextType {
     shippingAddress: Address,
     user: User | null,
     changeFor?: number
-  ) => Promise<void> 
-  clearOrderFromView: (orderId: string) => void // <-- 1. ADICIONAR NOVA FUNÇÃO
+  ) => Promise<Order> // <-- 1. MUDANÇA AQUI (agora retorna 'Order')
+  confirmDelivery: (orderId: string) => Promise<void>
 }
 
 export const OrderContext = createContext<OrderContextType | undefined>(undefined)
@@ -37,6 +37,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const [orders, setOrders] = useState<Order[]>([])
   const { user } = useAuth() 
 
+  // ... (useEffect de busca e realtime permanece o mesmo) ...
   useEffect(() => {
     if (!user) {
       setOrders([])
@@ -49,6 +50,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         .from('orders')
         .select('*')
         .eq('profile_id', user.id) 
+        .not('status', 'eq', 'archived') 
         .order('created_at', { ascending: false }) 
 
       if (error) {
@@ -75,12 +77,18 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         (payload) => {
           console.log('Status do pedido atualizado!', payload.new);
           const updatedOrder = formatOrderFromDB(payload.new, user);
-          
-          setOrders((currentOrders) => 
-            currentOrders.map(o => 
-              o.id === updatedOrder.id ? updatedOrder : o
-            )
-          );
+
+          if (updatedOrder.status === 'archived') {
+            setOrders((currentOrders) => 
+              currentOrders.filter(o => o.id !== updatedOrder.id)
+            );
+          } else {
+            setOrders((currentOrders) => 
+              currentOrders.map(o => 
+                o.id === updatedOrder.id ? updatedOrder : o
+              )
+            );
+          }
         }
       )
       .subscribe();
@@ -92,6 +100,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   }, [user])
 
 
+  // 2. FUNÇÃO addOrder ATUALIZADA
   const addOrder = async (
     items: CartItem[], 
     totalPrice: number, 
@@ -99,7 +108,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     shippingAddress: Address,
     user: User | null,
     changeFor?: number
-  ) => {
+  ): Promise<Order> => { // <-- MUDANÇA AQUI (define o tipo de retorno)
     
     const newOrderForSupabase = {
       profile_id: user ? user.id : null,
@@ -124,6 +133,8 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       const newOrderForLocalState = formatOrderFromDB(savedOrder, user);
       
       setOrders((prevOrders) => [newOrderForLocalState, ...prevOrders])
+      
+      return newOrderForLocalState; // <-- 3. A LINHA MÁGICA QUE FALTAVA!
 
     } catch (err) {
       console.error("Falha ao processar 'addOrder':", err)
@@ -131,22 +142,32 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  // 2. IMPLEMENTAR A FUNÇÃO DE "LIMPAR DA TELA"
-  const clearOrderFromView = (orderId: string) => {
-    setOrders((currentOrders) => 
-      currentOrders.filter(order => order.id !== orderId)
-    );
+  // ... (confirmDelivery permanece o mesmo) ...
+  const confirmDelivery = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'archived' })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      setOrders((currentOrders) => 
+        currentOrders.filter(order => order.id !== orderId)
+      );
+    } catch (err) {
+      console.error("Erro em confirmDelivery:", err);
+      throw err;
+    }
   }
 
   return (
-    // 3. EXPORTAR A NOVA FUNÇÃO
-    <OrderContext.Provider value={{ orders, addOrder, clearOrderFromView }}>
+    <OrderContext.Provider value={{ orders, addOrder, confirmDelivery }}>
       {children}
     </OrderContext.Provider>
   )
 }
 
-// Hook customizado
 export const useOrders = () => {
   const context = useContext(OrderContext)
   if (context === undefined) {
