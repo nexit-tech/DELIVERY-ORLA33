@@ -32,6 +32,9 @@
   overflow: hidden; /* Importante para o layout */
   transform: translateY(100%); 
   transition: transform 0.3s ease-out;
+  /* Adicionado para o "arrastar" funcionar bem em mobile */
+  touch-action: none; 
+  
 }
 .modalContent.open {
   transform: translateY(0%);
@@ -60,11 +63,14 @@
     transform: scale(0.95);
 }
 
-/* --- NOVA ÁREA ROLÁVEL --- */
+/* --- ÁREA ROLÁVEL --- */
 .scrollableArea {
   flex-grow: 1;
   overflow-y: auto;
-  /* O padding do footer será o padding-bottom */
+  /* Permite o "arraste" da página PAI (o modal) quando o scroll chegar ao limite */
+  overscroll-behavior: contain; 
+  /* Adiciona o respiro no final, "subindo" o conteúdo */
+  padding-bottom: 1.5rem; 
 }
 
 .productImageWrapper {

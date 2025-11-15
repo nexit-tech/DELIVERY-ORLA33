@@ -10,7 +10,6 @@ interface OrdersModalProps {
   onClose: () => void
 }
 
-// 2. Helper para traduzir o status
 const getStatusInfo = (status: OrderStatus): { text: string; description: string } => {
   switch (status) {
     case 'pending':
@@ -22,8 +21,8 @@ const getStatusInfo = (status: OrderStatus): { text: string; description: string
       return { text: 'Em preparo', description: 'Seu pedido está sendo preparado!' }
     case 'delivering':
       return { text: 'Em entrega', description: 'O pedido saiu para entrega.' }
-    case 'completed':
-      return { text: 'Entregue', description: 'Seu pedido foi entregue.' }
+    case 'completed': // <-- O ADMIN USA ESTE
+      return { text: 'Entregue', description: 'Seu pedido foi entregue.' } // <-- O CLIENTE VÊ ISTO
     case 'cancelled':
       return { text: 'Cancelado', description: 'O pedido foi cancelado.' }
     default:
@@ -33,14 +32,14 @@ const getStatusInfo = (status: OrderStatus): { text: string; description: string
 
 export default function OrdersModal({ onClose }: OrdersModalProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { orders } = useOrders() // 3. Obter a lista de pedidos
+  // 2. OBTER A NOVA FUNÇÃO DO HOOK
+  const { orders, clearOrderFromView } = useOrders()
 
   useEffect(() => {
     const timer = setTimeout(() => setIsOpen(true), 10);
     document.body.classList.add(styles.modalOpen);
     return () => {
       clearTimeout(timer);
-      // O 'page.tsx' vai gerir o overflow global
     };
   }, []);
 
@@ -55,7 +54,6 @@ export default function OrdersModal({ onClose }: OrdersModalProps) {
     }
   }
 
-  // Helper para formatar data
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   }
@@ -89,7 +87,8 @@ export default function OrdersModal({ onClose }: OrdersModalProps) {
                 <div key={order.id} className={styles.orderCard}>
                   <div className={styles.orderHeader}>
                     <h4>{firstItemName} {order.items.length > 1 ? `+ ${order.items.length - 1} itens` : ''}</h4>
-                    <span className={styles.orderPrice}>${order.totalPrice.toFixed(2)}</span>
+                    {/* O preço aqui deve ser o totalPrice do pedido */}
+                    <span className={styles.orderPrice}>R${order.totalPrice.toFixed(2)}</span>
                   </div>
                   <div className={styles.orderStatusWrapper}>
                     <span className={`${styles.statusDot} ${styles[order.status]}`}></span>
@@ -100,6 +99,16 @@ export default function OrdersModal({ onClose }: OrdersModalProps) {
                     <span>{totalItems} {totalItems > 1 ? 'itens' : 'item'}</span>
                     <span>{formatTime(order.createdAt)}</span>
                   </div>
+                  
+                  {/* 3. RENDERIZAÇÃO CONDICIONAL DO BOTÃO */}
+                  {order.status === 'completed' && (
+                    <button 
+                      className={styles.confirmButton}
+                      onClick={() => clearOrderFromView(order.id)}
+                    >
+                      Confirmar Entrega
+                    </button>
+                  )}
                 </div>
               )
             })

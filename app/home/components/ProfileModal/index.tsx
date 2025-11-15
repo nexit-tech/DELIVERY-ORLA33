@@ -1,27 +1,29 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react' // 1. IMPORTAR useRef
-import { X, User, MapPin, Package, LogOut, Edit3 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+// 1. REMOVER 'Package' (ícone do botão)
+import { X, User, MapPin, LogOut, Edit3, Trash2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import styles from './styles.module.css'
 
+// 2. REMOVER 'onViewOrders' DA INTERFACE
 interface ProfileModalProps {
   onClose: () => void
-  onViewOrders: () => void
   onAddAddressClick: () => void
   onEditClick: () => void
+  onDeleteAddressClick: (addressId: string) => void
 }
 
 export default function ProfileModal({ 
   onClose, 
-  onViewOrders, 
   onAddAddressClick,
-  onEditClick
-}: ProfileModalProps) {
+  onEditClick,
+  onDeleteAddressClick 
+}: ProfileModalProps) { // 3. REMOVER 'onViewOrders' DAQUI
   
   const [isOpen, setIsOpen] = useState(false)
   const { user, logout } = useAuth() 
-  const modalRef = useRef<HTMLDivElement>(null) // 2. ADICIONAR REF
+  const modalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setIsOpen(true), 10)
@@ -33,17 +35,19 @@ export default function ProfileModal({
     setTimeout(onClose, 300)
   }
 
-  // 3. CORRIGIR CLIQUE NO OVERLAY
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       handleClose()
     }
   }
 
+  // 4. REMOVER A FUNÇÃO 'handleViewOrders'
+  /*
   const handleViewOrders = () => {
     handleClose()
     onViewOrders()
   }
+  */
 
   const handleLogout = () => {
     logout()
@@ -53,6 +57,10 @@ export default function ProfileModal({
   const handleAddAddress = () => {
     onAddAddressClick() 
   }
+
+  const handleDeleteAddress = (addressId: string) => {
+    onDeleteAddressClick(addressId); 
+  };
 
   if (!user) {
     return null 
@@ -65,7 +73,7 @@ export default function ProfileModal({
     >
       <div 
         className={`${styles.modalContent} ${isOpen ? styles.open : ''}`} 
-        ref={modalRef} // 4. LIGAR REF
+        ref={modalRef}
       >
         <div className={styles.header}>
           <h2>Meu Perfil</h2>
@@ -75,7 +83,7 @@ export default function ProfileModal({
         </div>
 
         <div className={styles.scrollableArea}>
-          {/* ... (O resto do JSX permanece o mesmo) ... */}
+          {/* ... (profileHeader e section de endereços ficam iguais) ... */}
           <div className={styles.profileHeader}>
             <div className={styles.avatar}>
               <User size={30} />
@@ -95,11 +103,25 @@ export default function ProfileModal({
               <MapPin size={16} /> Meus Endereços
             </h4>
             <div className={styles.addressList}>
+              
               {user.addresses.map((address) => (
                 <div key={address.id} className={styles.addressCard}>
-                  <h5>{address.name}</h5>
-                  <p>{address.street}, {address.number}</p>
-                  <p>{address.neighborhood}</p>
+                  <div className={styles.addressInfo}>
+                    <h5>{address.name}</h5>
+                    <p>{address.street}, {address.number}</p>
+                    <p>{address.neighborhood}</p>
+                    {address.complement && (
+                      <p className={styles.addressComplement}>{address.complement}</p>
+                    )}
+                  </div>
+                  
+                  <button 
+                    className={styles.deleteAddressButton}
+                    onClick={() => handleDeleteAddress(address.id)}
+                    aria-label="Apagar endereço"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -109,10 +131,13 @@ export default function ProfileModal({
           </div>
 
           <div className={styles.section}>
+            {/* 5. REMOVER O BOTÃO DE HISTÓRICO DAQUI */}
+            {/*
             <button className={styles.linkButton} onClick={handleViewOrders}>
               <Package size={20} />
               <span>Ver histórico de pedidos</span>
             </button>
+            */}
             <button className={styles.linkButton} onClick={handleLogout}>
               <LogOut size={20} />
               <span>Sair da conta</span>

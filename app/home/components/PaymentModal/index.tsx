@@ -9,22 +9,28 @@ interface PaymentModalProps {
   onClose: () => void
   onConfirmOrder: (paymentMethod: PaymentMethod, changeFor?: number) => void
   totalPrice: number
+  isLoading: boolean // 1. RECEBER A PROP 'isLoading'
 }
 
-export default function PaymentModal({ onClose, onConfirmOrder, totalPrice }: PaymentModalProps) {
+export default function PaymentModal({ 
+  onClose, 
+  onConfirmOrder, 
+  totalPrice, 
+  isLoading // 2. OBTER A PROP
+}: PaymentModalProps) {
+  
   const [isOpen, setIsOpen] = useState(false)
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('none')
   const [changeFor, setChangeFor] = useState('')
 
   useEffect(() => {
-    // Animação de entrada
     const timer = setTimeout(() => setIsOpen(true), 10)
     return () => clearTimeout(timer)
   }, [])
 
   const handleClose = () => {
     setIsOpen(false)
-    setTimeout(onClose, 300) // Espera a animação de saída
+    setTimeout(onClose, 300) 
   }
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -39,7 +45,6 @@ export default function PaymentModal({ onClose, onConfirmOrder, totalPrice }: Pa
       return
     }
     
-    // Converte o "troco para" em número, se for o caso
     const changeAmount = selectedPayment === 'money' ? parseFloat(changeFor) : undefined
     if (selectedPayment === 'money' && changeAmount && changeAmount < totalPrice) {
         alert('O valor do troco deve ser maior ou igual ao total do pedido.')
@@ -70,6 +75,7 @@ export default function PaymentModal({ onClose, onConfirmOrder, totalPrice }: Pa
         </div>
 
         <div className={styles.scrollableArea}>
+          {/* ... (seções de Total e Forma de Pagamento - sem alterações) ... */}
           <div className={styles.paymentSection}>
             <h3 className={styles.sectionTitle}>Total</h3>
             <span className={styles.totalPrice}>${totalPrice.toFixed(2)}</span>
@@ -92,7 +98,6 @@ export default function PaymentModal({ onClose, onConfirmOrder, totalPrice }: Pa
             </div>
           </div>
 
-          {/* Campo de Troco condicional */}
           {selectedPayment === 'money' && (
             <div className={styles.paymentSection}>
               <h3 className={styles.sectionTitle}>Troco</h3>
@@ -114,12 +119,13 @@ export default function PaymentModal({ onClose, onConfirmOrder, totalPrice }: Pa
         </div>
 
         <div className={styles.footer}>
+          {/* 3. ATUALIZAR O BOTÃO DE CONFIRMAR */}
           <button 
             className={styles.confirmButton} 
             onClick={handleConfirm}
-            disabled={selectedPayment === 'none'}
+            disabled={selectedPayment === 'none' || isLoading}
           >
-            Confirmar Pedido
+            {isLoading ? 'A processar...' : 'Confirmar Pedido'}
           </button>
         </div>
       </div>

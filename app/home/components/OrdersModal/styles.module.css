@@ -33,6 +33,7 @@
   overflow: hidden;
   transform: translateY(100%);
   transition: transform 0.3s ease-out;
+  touch-action: none;
 }
 .modalContent.open {
   transform: translateY(0%);
@@ -165,4 +166,25 @@
   color: var(--text-secondary);
   border-top: 1px solid var(--border-color);
   padding-top: 0.75rem;
+}
+
+/* Botão de Confirmar Entrega */
+.confirmButton {
+  width: 100%;
+  background-color: #2ecc71; /* Verde (o mesmo do status 'completed') */
+  color: #fff;
+  border: none;
+  border-radius: 2rem;
+  padding: 0.8rem; /* Um pouco menor */
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 1rem; /* Espaçamento do footer do card */
+}
+.confirmButton:hover {
+  background-color: #27ae60; /* Verde mais escuro */
+}
+.confirmButton:active {
+  transform: scale(0.98);
 }

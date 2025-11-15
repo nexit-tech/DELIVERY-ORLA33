@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react" // 1. IMPORTAR o 'useRef'
+import { useState, useEffect, useRef } from "react"
 import { X, LogIn, User, Mail, Lock, Phone, MapPin } from 'lucide-react'
 import styles from './styles.module.css'
 import { useAuth } from "@/context/AuthContext"
@@ -28,10 +28,10 @@ export default function LoginModal({ onClose }: LoginModalProps) {
   const [regStreet, setRegStreet] = useState('')
   const [regNumber, setRegNumber] = useState('')
   const [regNeighborhood, setRegNeighborhood] = useState('')
+  // 1. ADICIONAR ESTADO PARA O COMPLEMENTO
+  const [regComplement, setRegComplement] = useState('')
 
   const { login, register } = useAuth()
-
-  // 2. DEFINIR O 'modalRef' QUE FALTAVA
   const modalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -48,7 +48,6 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     }, 300)
   }
 
-  // 3. ATUALIZAR a lógica de clique no overlay
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       handleClose()
@@ -80,17 +79,18 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     setError(null)
     setIsLoading(true)
     try {
+      // 2. PASSAR O COMPLEMENTO PARA A FUNÇÃO DE REGISTRO
       await register(
         regName,
         regEmail,
         regPassword,
         regPhone,
         { 
-          name: 'Principal',
+          name: 'Principal', // Define um nome padrão
           street: regStreet, 
           number: regNumber, 
           neighborhood: regNeighborhood,
-          complement: null // Adicionado para bater com o tipo
+          complement: regComplement || undefined // <-- MUDANÇA AQUI
         }
       )
       handleClose()
@@ -111,7 +111,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     >
       <div 
         className={`${styles.modalContent} ${isOpen ? styles.open : ''}`} 
-        ref={modalRef} // 4. O 'ref' agora funciona
+        ref={modalRef}
       >
         <div className={styles.header}>
           <h2>{mode === 'login' ? 'Login' : 'Criar Conta'}</h2>
@@ -120,7 +120,6 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           </button>
         </div>
 
-        {/* ... (O resto do JSX permanece o mesmo) ... */}
         {mode === 'login' ? (
           // --- TELA DE LOGIN ---
           <div className={styles.contentBody}>
@@ -211,6 +210,17 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                 <div className={styles.inputGroup}>
                   <input type="text" placeholder="Bairro" className={styles.input} value={regNeighborhood} onChange={(e) => setRegNeighborhood(e.target.value)} required />
                 </div>
+              </div>
+              
+              {/* 3. ADICIONAR O CAMPO DE COMPLEMENTO (sem ícone) */}
+              <div className={styles.inputGroup}>
+                <input 
+                  type="text" 
+                  placeholder="Complemento (Apto, Bloco, etc.)" 
+                  className={`${styles.input} ${styles.inputNoIcon}`} // Usando a classe de estilo
+                  value={regComplement} 
+                  onChange={(e) => setRegComplement(e.target.value)} 
+                />
               </div>
 
               <button type="submit" className={styles.submitButton} disabled={isLoading}>

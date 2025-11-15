@@ -18,7 +18,8 @@ interface AuthContextType {
     address: Omit<Address, 'id' | 'profile_id'>
   ) => Promise<void>
   addAddress: (address: Omit<Address, 'id' | 'profile_id'>) => Promise<void>
-  updatePassword: (newPassword: string) => Promise<void> // <-- 1. ADICIONADO
+  updatePassword: (newPassword: string) => Promise<void>
+  deleteAddress: (addressId: string) => Promise<void> // 1. PRECISA ESTAR NA INTERFACE
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -27,7 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // ... (useEffect, fetchUserProfile, login, logout, register, addAddress permanecem iguais) ...
+  // ... (useEffect e fetchUserProfile permanecem os mesmos) ...
   useEffect(() => {
     setIsLoading(true)
     const getInitialSession = async () => {
@@ -83,18 +84,128 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const login = async (email: string, pass: string) => { /* ... */ }
-  const logout = async () => { /* ... */ }
+  // ... (login, logout, register, addAddress, updatePassword permanecem os mesmos) ...
+  const login = async (email: string, pass: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: pass,
+      });
+      
+      if (error) throw error;
+      if (!data.session) throw new Error("Sessão não encontrada após o login.");
+      await fetchUserProfile(data.session); 
+
+    } catch (error) {
+      console.error("Erro no login:", error);
+      setIsLoading(false);
+      throw error;
+    }
+  }
+
+  const logout = async () => {
+    setIsLoading(true)
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      console.error("Erro ao fazer logout:", error)
+    }
+    setIsLoading(false)
+  }
+
   const register = async (
     name: string, 
     email: string, 
     pass: string, 
     phone: string, 
     address: Omit<Address, 'id' | 'profile_id'>
-  ) => { /* ... */ }
-  const addAddress = async (address: Omit<Address, 'id' | 'profile_id'>) => { /* ... */ }
+  ) => {
+    setIsLoading(true);
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: pass,
+        options: {
+          data: {
+            name: name,
+            phone: phone,
+          }
+        }
+      });
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("Criação do usuário falhou.");
+
+      const userId = authData.user.id;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          name: name,
+          phone: phone
+        });
+      if (profileError) throw profileError;
+
+      const { error: addressError } = await supabase
+        .from('addresses')
+        .insert({
+          ...address,
+          profile_id: userId
+        });
+      if (addressError) throw addressError;
+
+      if(authData.session) {
+         await fetchUserProfile(authData.session);
+      } else {
+         setIsLoading(false);
+      }
+      
+    } catch (error) {
+      console.error("Erro no registro:", error);
+      setIsLoading(false);
+      throw error;
+    }
+  }
   
-  // 2. NOVA FUNÇÃO PARA TROCAR SENHA
+  const addAddress = async (address: Omit<Address, 'id' | 'profile_id'>) => {
+    if (!user) {
+      console.error("Nenhum usuário logado para adicionar endereço.");
+      throw new Error("Você precisa estar logado para adicionar um endereço.");
+    }
+
+    try {
+      const newAddressData = {
+        ...address,
+        profile_id: user.id
+      };
+      
+      const { data, error } = await supabase
+        .from('addresses')
+        .insert(newAddressData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Erro ao inserir endereço:", error);
+        throw error;
+      }
+      if (!data) throw new Error("Não foi possível salvar o endereço.");
+
+      setUser((currentUser) => {
+        if (!currentUser) return null;
+        const newAddress = data as Address;
+        return {
+          ...currentUser,
+          addresses: [...currentUser.addresses, newAddress]
+        };
+      });
+
+    } catch (error) {
+      console.error("Erro ao adicionar endereço:", error);
+      throw error;
+    }
+  }
+  
   const updatePassword = async (newPassword: string) => {
     const { data, error } = await supabase.auth.updateUser({
       password: newPassword
@@ -107,6 +218,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log("Senha atualizada com sucesso:", data)
   }
 
+  // --- 2. A FUNÇÃO PRECISA ESTAR IMPLEMENTADA ASSIM ---
+  const deleteAddress = async (addressId: string) => {
+    if (!user) {
+      console.error("Nenhum usuário logado para deletar endereço.");
+      throw new Error("Você precisa estar logado.");
+    }
+
+    try {
+      // ETAPA A: APAGAR DO BANCO DE DADOS
+      const { error } = await supabase
+        .from('addresses')
+        .delete()
+        .eq('id', addressId) 
+        .eq('profile_id', user.id); // Garante que só o dono pode apagar
+      
+      if (error) {
+        console.error("Erro ao deletar endereço do Supabase:", error);
+        throw error;
+      }
+
+      // ETAPA B: ATUALIZAR A TELA (ESTADO DO REACT)
+      setUser((currentUser) => {
+        if (!currentUser) return null;
+        
+        const updatedAddresses = currentUser.addresses.filter(
+          (addr) => addr.id !== addressId
+        );
+        
+        return {
+          ...currentUser,
+          addresses: updatedAddresses
+        };
+      });
+
+    } catch (error) {
+      console.error("Erro ao deletar endereço:", error);
+      throw error; 
+    }
+  }
+
   const value = {
     user,
     isLoading,
@@ -114,7 +265,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
     register,
     addAddress,
-    updatePassword // <-- 3. EXPOR A FUNÇÃO
+    updatePassword,
+    deleteAddress // 3. PRECISA ESTAR EXPORTADA AQUI
   }
 
   return (

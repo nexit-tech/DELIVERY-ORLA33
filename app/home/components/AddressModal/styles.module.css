@@ -16,6 +16,8 @@
   display: flex; flex-direction: column; position: relative;
   overflow: hidden; transform: translateY(100%);
   transition: transform 0.3s ease-out;
+  transform: translateY(100%);
+  touch-action: none;
 }
 .modalContent.open { transform: translateY(0%); }
 .header {

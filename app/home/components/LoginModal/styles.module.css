@@ -16,6 +16,7 @@
   display: flex; flex-direction: column; position: relative;
   overflow: hidden; transform: translateY(100%);
   transition: transform 0.3s ease-out;
+  touch-action: none;
 }
 .modalContent.open { transform: translateY(0%); }
 .header {
@@ -100,7 +101,7 @@
     background-color: var(--background-primary);
     border: 1px solid var(--border-color);
     border-radius: 0.75rem;
-    padding: 0 1rem 0 3rem;
+    padding: 0 1rem 0 3rem; /* Padding padrão para inputs com ícone */
     font-size: 1rem;
     color: var(--text-primary);
     transition: border-color 0.2s ease;
@@ -111,6 +112,12 @@
 }
 .input::placeholder {
     color: var(--text-secondary);
+}
+
+/* --- 1. ADICIONAR ESTA CLASSE --- */
+/* Remove o padding de ícone para inputs que não o têm */
+.inputNoIcon {
+  padding-left: 1rem;
 }
 
 .addressTitle {
@@ -148,14 +155,13 @@
     justify-content: center;
     gap: 0.75rem;
 }
-/* ADICIONADO */
 .submitButton:disabled {
   background-color: var(--text-secondary);
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-/* --- NOVO: Estilo de Erro --- */
+/* ... (O resto do arquivo .css permanece o mesmo) ... */
 .error {
   color: #e74c3c; /* Vermelho */
   font-size: 0.9rem;
@@ -201,30 +207,25 @@
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
-    /* margin-bottom: 1rem; <-- REMOVIDO PARA USAR A MARGEM DO PRÓXIMO */
 }
 .googleButton:active {
     background-color: var(--border-color);
     transform: scale(0.98);
 }
 
-/* --- AJUSTADO AQUI --- */
 .toggleModeButton {
   background: transparent;
   border: none;
   color: var(--text-secondary);
   font-size: 0.9rem;
   cursor: pointer;
-  margin-top: 1.5rem; /* AUMENTADO O ESPAÇO */
+  margin-top: 1.5rem;
   padding: 0.5rem;
 }
-/* A tag <strong> que adicionámos no TSX */
 .toggleModeButton strong {
   color: var(--accent-color);
   font-weight: 600;
 }
-/* --- FIM DO AJUSTE --- */
-
 
 .guestButton {
     background-color: transparent;
@@ -232,7 +233,7 @@
     border: none;
     font-weight: 500;
     font-size: 0.9rem;
-    margin-top: 1rem; /* AUMENTADO O ESPAÇO */
+    margin-top: 1rem;
     cursor: pointer;
 }
 .guestButton:active {

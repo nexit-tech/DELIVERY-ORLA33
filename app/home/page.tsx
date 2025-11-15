@@ -16,6 +16,8 @@ import PaymentModal from './components/PaymentModal'
 import AddressModal from './components/AddressModal'
 import ProfileModal from './components/ProfileModal'
 import AddressFormModal from './components/AddressFormModal'
+import ChangePasswordModal from './components/ChangePasswordModal'
+import ConfirmDeleteModal from './components/ConfirmDeleteModal'
 import { supabase } from '@/lib/supabaseClient'
 import { DisplayProduct, SupabaseProduct, SupabaseCombo, PaymentMethod, Address, SupabaseCategory, AppUser } from '@/types'
 import styles from './styles.module.css'
@@ -25,9 +27,9 @@ const PROMO_CATEGORY_ID = 'virtual_promo_id'
 export default function HomePage() {
   const { cartItems, clearCart } = useCart()
   const { addOrder } = useOrders()
-  const { user, logout, addAddress, isLoading: isAuthLoading } = useAuth() // Pega o 'user' e o 'isLoading'
+  const { user, logout, addAddress, deleteAddress, isLoading: isAuthLoading } = useAuth()
 
-  // --- Estados dos Modals ---
+  // --- (Estados dos Modals, etc. - sem alterações) ---
   const [selectedProduct, setSelectedProduct] = useState<DisplayProduct | null>(null)
   const [isProductDetailsOpen, setIsProductDetailsOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
@@ -38,17 +40,20 @@ export default function HomePage() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false)
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false)
+  const [addressToDelete, setAddressToDelete] = useState<string | null>(null)
 
-  // --- Estado dos Dados (com filtro) ---
-  const [allProducts, setAllProducts] = useState<DisplayProduct[]>([]) // Guarda TUDO
-  const [filteredProducts, setFilteredProducts] = useState<DisplayProduct[]>([]) // Só o que aparece
+  // 1. NOVO ESTADO DE LOADING PARA O PEDIDO
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false)
+
+  // --- (Estados de Dados e useEffects - sem alterações) ---
+  const [allProducts, setAllProducts] = useState<DisplayProduct[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<DisplayProduct[]>([])
   const [categories, setCategories] = useState<SupabaseCategory[]>([])
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [isLoadingMenu, setIsLoadingMenu] = useState(true) // Renomeado
-
+  const [isLoadingMenu, setIsLoadingMenu] = useState(true)
   const [selectedAddressForOrder, setSelectedAddressForOrder] = useState<Address | null>(null)
 
-  // EFEITO PARA BUSCAR OS DADOS (Produtos, Combos E Categorias)
   useEffect(() => {
     const fetchMenu = async () => {
       setIsLoadingMenu(true)
@@ -71,12 +76,9 @@ export default function HomePage() {
         setActiveCategory(promoCategory.id)
       }
 
-      // Puxar Produtos
       const { data: products, error: productError } = await supabase
         .from('products')
         .select('*')
-
-      // Puxar Combos
       const { data: combos, error: comboError } = await supabase
         .from('combos')
         .select('*') 
@@ -85,33 +87,21 @@ export default function HomePage() {
       if (comboError) console.error("Erro ao buscar combos:", comboError)
 
       const formattedProducts: DisplayProduct[] = (products || []).map((p: SupabaseProduct) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        price: p.price,
-        image_url: p.image_url,
-        type: 'product',
-        category_id: p.category_id,
+        id: p.id, name: p.name, description: p.description, price: p.price,
+        image_url: p.image_url, type: 'product', category_id: p.category_id,
       }))
       
-      const formattedCombos: DisplayProduct[] = (combos || []).map((c: any) => ({ // 'any' para apanhar category_id
-        id: c.id,
-        name: c.name,
-        description: c.description || null,
-        price: c.base_price,
-        image_url: c.image_url || null,
-        type: 'combo',
-        category_id: PROMO_CATEGORY_ID,
+      const formattedCombos: DisplayProduct[] = (combos || []).map((c: any) => ({
+        id: c.id, name: c.name, description: c.description || null, price: c.base_price,
+        image_url: c.image_url || null, type: 'combo', category_id: PROMO_CATEGORY_ID,
       }))
 
       setAllProducts([...formattedProducts, ...formattedCombos])
       setIsLoadingMenu(false)
     }
-
     fetchMenu()
   }, [])
   
-  // EFEITO PARA FILTRAR A LISTA
   useEffect(() => {
     if (activeCategory === null) {
       setFilteredProducts(allProducts) 
@@ -122,21 +112,19 @@ export default function HomePage() {
     }
   }, [activeCategory, allProducts])
 
-
-  // Efeito para gerir o scroll global
   useEffect(() => {
     if (isProductDetailsOpen || isCartOpen || isOrdersOpen || isLoginOpen || 
         isPaymentOpen || isAddressModalOpen || isProfileModalOpen || 
-        isAddressFormOpen || isChangePasswordOpen) {
+        isAddressFormOpen || isChangePasswordOpen || isConfirmDeleteOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'auto'
     }
   }, [isProductDetailsOpen, isCartOpen, isOrdersOpen, isLoginOpen, 
       isPaymentOpen, isAddressModalOpen, isProfileModalOpen, 
-      isAddressFormOpen, isChangePasswordOpen])
+      isAddressFormOpen, isChangePasswordOpen, isConfirmDeleteOpen])
 
-  // --- Funções de Abertura/Fecho de Modals ---
+  // --- (Funções de abrir/fechar modals - sem alterações) ---
   const handleProductClick = (product: DisplayProduct) => { setSelectedProduct(product); setIsProductDetailsOpen(true) }
   const handleCloseProductDetails = () => { setIsProductDetailsOpen(false); setSelectedProduct(null) }
   const handleOpenCart = () => setIsCartOpen(true)
@@ -147,38 +135,48 @@ export default function HomePage() {
   const handleClosePayment = () => setIsPaymentOpen(false)
   const handleOpenAddress = () => setIsAddressModalOpen(true)
   const handleCloseAddress = () => setIsAddressModalOpen(false)
-  
   const handleOpenLogin = () => setIsLoginOpen(true)
   const handleCloseLogin = () => setIsLoginOpen(false)
   const handleOpenProfile = () => setIsProfileModalOpen(true)
   const handleCloseProfile = () => setIsProfileModalOpen(false)
-  
   const handleOpenAddressForm = () => setIsAddressFormOpen(true)
   const handleCloseAddressForm = () => setIsAddressFormOpen(false)
-  
   const handleOpenChangePassword = () => setIsChangePasswordOpen(true)
   const handleCloseChangePassword = () => setIsChangePasswordOpen(false)
+
+  const handleOpenConfirmDelete = (addressId: string) => {
+    setAddressToDelete(addressId)
+    setIsConfirmDeleteOpen(true)
+  }
+
+  const handleCloseConfirmDelete = () => {
+    setAddressToDelete(null)
+    setIsConfirmDeleteOpen(false)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!addressToDelete) return;
+    try {
+      await deleteAddress(addressToDelete);
+      handleCloseConfirmDelete();
+    } catch (err: any) {
+      alert(`Erro ao apagar: ${err.message}`);
+    }
+  }
 
   const handleSaveAddress = (address: Omit<Address, 'id' | 'profile_id'>) => {
     addAddress(address)
     handleCloseAddressForm()
   }
 
-  // --- LÓGICA DO BOTÃO "PERFIL" ---
   const handleProfileClick = () => {
-    console.log("handleProfileClick chamado!")
-    console.log("Utilizador (User):", user)
-    
     if (user) {
-      console.log("A abrir ProfileModal...")
-      handleOpenProfile() // Se logado, abre o Perfil
+      handleOpenProfile()
     } else {
-      console.log("A abrir LoginModal...")
-      handleOpenLogin() // Se deslogado, abre o Login
+      handleOpenLogin()
     }
   }
 
-  // --- FLUXO DE CHECKOUT ---
   const handleCheckout = () => {
     handleCloseCart()
     handleOpenAddress()
@@ -190,29 +188,37 @@ export default function HomePage() {
     handleOpenPayment()
   }
 
-  const handleConfirmOrder = (paymentMethod: PaymentMethod, changeFor?: number) => {
+  // 2. ATUALIZAR 'handleConfirmOrder'
+  const handleConfirmOrder = async (paymentMethod: PaymentMethod, changeFor?: number) => {
     if (!selectedAddressForOrder) {
       alert("Erro: Nenhum endereço selecionado.")
       return
     }
     
-    const subtotal = cartItems.reduce((total, item) => total + item.unitPrice * item.quantity, 0)
+    setIsPlacingOrder(true) // LIGA O LOADING
     
-    // @ts-ignore
-    addOrder(cartItems, subtotal, paymentMethod, selectedAddressForOrder, user, changeFor)
-    
-    clearCart()
-    handleClosePayment()
-    handleOpenOrders()
-    setSelectedAddressForOrder(null)
+    try {
+      const subtotal = cartItems.reduce((total, item) => total + item.unitPrice * item.quantity, 0)
+      
+      // ESPERA o pedido ser salvo no banco E no estado
+      // @ts-ignore
+      await addOrder(cartItems, subtotal, paymentMethod, selectedAddressForOrder, user, changeFor)
+      
+      // SÓ DEPOIS de tudo dar certo, faz o resto
+      clearCart()
+      handleClosePayment()
+      handleOpenOrders()
+      setSelectedAddressForOrder(null)
+
+    } catch (error: any) {
+      console.error("Erro ao confirmar pedido:", error)
+      alert(`Falha ao criar o pedido: ${error.message}`)
+    } finally {
+      setIsPlacingOrder(false) // DESLIGA O LOADING (dando certo ou errado)
+    }
   }
   
-  // LÓGICA DO MODAL DE PERFIL
-  const handleViewOrdersFromProfile = () => {
-    handleCloseProfile()
-    handleOpenOrders()
-  }
-
+  // --- (handleEditProfile e verificação de auth - sem alterações) ---
   const handleEditProfile = () => {
     handleCloseProfile()
     handleOpenChangePassword()
@@ -225,14 +231,13 @@ export default function HomePage() {
   return (
     <>
       <main className={styles.container}>
+        {/* ... (Hero, Tabs, Grid) ... */}
         <HeroSection />
-        
         <CategoryTabs 
           categories={categories}
           activeCategory={activeCategory}
           onCategorySelect={setActiveCategory}
         />
-        
         <div className={styles.productsGrid}>
           {isLoadingMenu ? (
             <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>A carregar o menu...</p>
@@ -248,15 +253,13 @@ export default function HomePage() {
         </div>
       </main> 
 
-      {/* Navbar e Modals (irmãos do <main>) */}
       <Navbar 
         onCartClick={handleOpenCart} 
         onOrdersClick={handleOpenOrders}
-        onProfileClick={handleProfileClick} // <-- A PROP ESTÁ AQUI
+        onProfileClick={handleProfileClick}
       />
 
-      {/* --- RENDERIZAÇÃO DE TODOS OS MODALS --- */}
-
+      {/* ... (Outros Modals) ... */}
       {isProductDetailsOpen && selectedProduct && (
         <ProductDetailsModal
           product={selectedProduct}
@@ -279,11 +282,13 @@ export default function HomePage() {
         />
       )}
 
+      {/* 3. PASSAR O ESTADO DE LOADING PARA O MODAL */}
       {isPaymentOpen && (
         <PaymentModal 
           onClose={handleClosePayment}
           onConfirmOrder={handleConfirmOrder}
           totalPrice={cartItems.reduce((total, item) => total + item.unitPrice * item.quantity, 0)}
+          isLoading={isPlacingOrder}
         />
       )}
 
@@ -295,12 +300,12 @@ export default function HomePage() {
         <LoginModal onClose={handleCloseLogin} />
       )}
       
-      {isProfileModalOpen && user && ( // Abertura do ProfileModal
+      {isProfileModalOpen && user && ( 
         <ProfileModal 
           onClose={handleCloseProfile}
-          onViewOrders={handleViewOrdersFromProfile}
           onAddAddressClick={handleOpenAddressForm}
           onEditClick={handleEditProfile}
+          onDeleteAddressClick={handleOpenConfirmDelete} 
         />
       )}
       
@@ -314,6 +319,13 @@ export default function HomePage() {
 
       {isChangePasswordOpen && (
         <ChangePasswordModal onClose={handleCloseChangePassword} />
+      )}
+
+      {isConfirmDeleteOpen && (
+        <ConfirmDeleteModal
+          onClose={handleCloseConfirmDelete}
+          onConfirm={handleConfirmDelete}
+        />
       )}
     </>
   )

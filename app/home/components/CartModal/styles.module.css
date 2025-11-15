@@ -33,6 +33,7 @@
   overflow: hidden;
   transform: translateY(100%);
   transition: transform 0.3s ease-out;
+  touch-action: none;
 }
 .modalContent.open {
   transform: translateY(0%);
