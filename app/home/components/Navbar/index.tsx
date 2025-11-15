@@ -4,32 +4,39 @@ import { ShoppingCart, User, Package } from 'lucide-react'
 import styles from './styles.module.css'
 import { useCart } from '@/context/CartContext'
 import { useOrders } from '@/context/OrderContext'
+import { Order } from '@/types' // <-- MUDANÇA 1: Importar o tipo 'Order'
 
-// 1. A prop 'onProfileClick' TEM de estar aqui
+// A interface (props) não muda
 interface NavbarProps {
   onCartClick: () => void
   onOrdersClick: () => void 
-  onProfileClick: () => void // <-- ESSENCIAL
+  onProfileClick: () => void
 }
 
 export default function Navbar({ 
   onCartClick, 
   onOrdersClick, 
-  onProfileClick // <-- ESSENCIAL
+  onProfileClick 
 }: NavbarProps) {
   const { cartItems } = useCart() 
   const { orders } = useOrders()
-  const activeItem = 'home' 
+  
+  // --- MUDANÇA 2: AVISAR AO TYPESCRIPT QUE 'activeItem' É UMA STRING GENÉRICA ---
+  const activeItem: string = 'home' 
+  // -------------------------------------------------------------------------
 
   const totalCartItems = cartItems.length 
 
+  // --- MUDANÇA 3: SUBSTITUIR '(order: any)' por '(order: Order)' ---
   const activeOrdersCount = (orders || []).filter(
-    (order: any) => order.status !== 'completed' && order.status !== 'cancelled'
+    (order: Order) => order.status !== 'completed' && order.status !== 'cancelled'
   ).length
+  // ----------------------------------------------------------------
 
   return (
     <nav className={styles.navbar}>
       <button
+        // Agora 'activeItem' (string) === 'cart' (string) é uma comparação válida
         className={`${styles.navItem} ${activeItem === 'cart' ? styles.active : ''}`}
         aria-label="Carrinho"
         onClick={onCartClick} 
@@ -60,7 +67,7 @@ export default function Navbar({
       <button
         className={`${styles.navItem} ${activeItem === 'profile' ? styles.active : ''}`}
         aria-label="Perfil"
-        onClick={onProfileClick} // <-- 2. O 'onClick' TEM de estar a chamar a prop
+        onClick={onProfileClick}
       >
         <div className={styles.iconWrapper}>
           <User size={24} strokeWidth={2.5} />
