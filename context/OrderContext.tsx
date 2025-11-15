@@ -14,7 +14,7 @@ interface OrderContextType {
     shippingAddress: Address,
     user: User | null,
     changeFor?: number
-  ) => Promise<Order> // <-- 1. MUDANÇA AQUI (agora retorna 'Order')
+  ) => Promise<Order> 
   confirmDelivery: (orderId: string) => Promise<void>
 }
 
@@ -37,7 +37,6 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   const [orders, setOrders] = useState<Order[]>([])
   const { user } = useAuth() 
 
-  // ... (useEffect de busca e realtime permanece o mesmo) ...
   useEffect(() => {
     if (!user) {
       setOrders([])
@@ -58,7 +57,9 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
         return
       }
       
-      const formattedOrders: Order[] = data.map(order => formatOrderFromDB(order, user));
+      // --- CORREÇÃO AQUI (Linha 53) ---
+      // (data.map(order => ...)) virou (data.map((order: any) => ...))
+      const formattedOrders: Order[] = data.map((order: any) => formatOrderFromDB(order, user));
       setOrders(formattedOrders)
     }
 
@@ -100,7 +101,6 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
   }, [user])
 
 
-  // 2. FUNÇÃO addOrder ATUALIZADA
   const addOrder = async (
     items: CartItem[], 
     totalPrice: number, 
@@ -108,7 +108,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     shippingAddress: Address,
     user: User | null,
     changeFor?: number
-  ): Promise<Order> => { // <-- MUDANÇA AQUI (define o tipo de retorno)
+  ): Promise<Order> => {
     
     const newOrderForSupabase = {
       profile_id: user ? user.id : null,
@@ -134,7 +134,7 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       
       setOrders((prevOrders) => [newOrderForLocalState, ...prevOrders])
       
-      return newOrderForLocalState; // <-- 3. A LINHA MÁGICA QUE FALTAVA!
+      return newOrderForLocalState; 
 
     } catch (err) {
       console.error("Falha ao processar 'addOrder':", err)
@@ -142,7 +142,6 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  // ... (confirmDelivery permanece o mesmo) ...
   const confirmDelivery = async (orderId: string) => {
     try {
       const { error } = await supabase

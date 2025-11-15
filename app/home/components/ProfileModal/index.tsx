@@ -1,12 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-// 1. REMOVER 'Package' (ícone do botão)
 import { X, User, MapPin, LogOut, Edit3, Trash2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import styles from './styles.module.css'
+import { Address } from '@/types' // <-- 1. IMPORTAR O TIPO 'Address'
 
-// 2. REMOVER 'onViewOrders' DA INTERFACE
 interface ProfileModalProps {
   onClose: () => void
   onAddAddressClick: () => void
@@ -19,7 +18,7 @@ export default function ProfileModal({
   onAddAddressClick,
   onEditClick,
   onDeleteAddressClick 
-}: ProfileModalProps) { // 3. REMOVER 'onViewOrders' DAQUI
+}: ProfileModalProps) { 
   
   const [isOpen, setIsOpen] = useState(false)
   const { user, logout } = useAuth() 
@@ -40,14 +39,6 @@ export default function ProfileModal({
       handleClose()
     }
   }
-
-  // 4. REMOVER A FUNÇÃO 'handleViewOrders'
-  /*
-  const handleViewOrders = () => {
-    handleClose()
-    onViewOrders()
-  }
-  */
 
   const handleLogout = () => {
     logout()
@@ -83,7 +74,6 @@ export default function ProfileModal({
         </div>
 
         <div className={styles.scrollableArea}>
-          {/* ... (profileHeader e section de endereços ficam iguais) ... */}
           <div className={styles.profileHeader}>
             <div className={styles.avatar}>
               <User size={30} />
@@ -104,7 +94,8 @@ export default function ProfileModal({
             </h4>
             <div className={styles.addressList}>
               
-              {user.addresses.map((address) => (
+              {/* --- CORREÇÃO AQUI (Linha 107) --- */}
+              {user.addresses.map((address: Address) => (
                 <div key={address.id} className={styles.addressCard}>
                   <div className={styles.addressInfo}>
                     <h5>{address.name}</h5>
@@ -131,13 +122,6 @@ export default function ProfileModal({
           </div>
 
           <div className={styles.section}>
-            {/* 5. REMOVER O BOTÃO DE HISTÓRICO DAQUI */}
-            {/*
-            <button className={styles.linkButton} onClick={handleViewOrders}>
-              <Package size={20} />
-              <span>Ver histórico de pedidos</span>
-            </button>
-            */}
             <button className={styles.linkButton} onClick={handleLogout}>
               <LogOut size={20} />
               <span>Sair da conta</span>
