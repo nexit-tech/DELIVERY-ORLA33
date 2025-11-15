@@ -18,8 +18,8 @@ const getStatusInfo = (status: OrderStatus): { text: string; description: string
       return { text: 'Em preparo', description: 'Seu pedido está sendo preparado!' }
     case 'delivering':
       return { text: 'Em entrega', description: 'O pedido saiu para entrega.' }
-    case 'completed': 
-      return { text: 'Entregue', description: 'Seu pedido foi entregue.' } 
+    case 'completed': // O Admin move para 'completed'
+      return { text: 'Entregue', description: 'Seu pedido foi entregue.' } // O cliente vê isto
     case 'cancelled':
       return { text: 'Cancelado', description: 'O pedido foi cancelado.' }
     default:
@@ -29,8 +29,9 @@ const getStatusInfo = (status: OrderStatus): { text: string; description: string
 
 export default function OrdersModal({ onClose }: OrdersModalProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { orders, confirmDelivery } = useOrders()
-  const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null)
+  
+  // 1. LÓGICA DE LOADING E 'confirmDelivery' REMOVIDA
+  const { orders } = useOrders()
 
   useEffect(() => {
     const timer = setTimeout(() => setIsOpen(true), 10);
@@ -55,24 +56,8 @@ export default function OrdersModal({ onClose }: OrdersModalProps) {
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   }
 
-  // --- FUNÇÃO DE CONFIRMAR CORRIGIDA ---
-  const handleConfirm = async (orderId: string) => {
-    setLoadingOrderId(orderId); // Ativa o loading
-    try {
-      await confirmDelivery(orderId);
-      // O OrderContext vai remover o item da lista
-      // e este componente vai re-renderizar sem o card.
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao confirmar a entrega. Tente novamente.");
-    } finally {
-      // Adicionamos o 'finally' de volta.
-      // Como não há mais "corrida" (o listener ignora),
-      // é seguro resetar o loading quando a função (sucesso ou erro) terminar.
-      setLoadingOrderId(null);
-    }
-  }
-  // --- FIM DA CORREÇÃO ---
+  // 2. FUNÇÃO 'handleConfirm' REMOVIDA
+  // Não precisamos mais dela.
 
   return (
     <div 
@@ -98,8 +83,7 @@ export default function OrdersModal({ onClose }: OrdersModalProps) {
               const statusInfo = getStatusInfo(order.status)
               const firstItemName = order.items[0]?.product.name || 'Pedido'
               const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0)
-              const isLoading = loadingOrderId === order.id; 
-
+              
               return (
                 <div key={order.id} className={styles.orderCard}>
                   <div className={styles.orderHeader}>
@@ -116,15 +100,8 @@ export default function OrdersModal({ onClose }: OrdersModalProps) {
                     <span>{formatTime(order.createdAt)}</span>
                   </div>
                   
-                  {order.status === 'completed' && (
-                    <button 
-                      className={styles.confirmButton}
-                      onClick={() => handleConfirm(order.id)} 
-                      disabled={isLoading} 
-                    >
-                      {isLoading ? 'Confirmando...' : 'Confirmar Entrega'}
-                    </button>
-                  )}
+                  {/* 3. BOTÃO DE CONFIRMAÇÃO REMOVIDO DAQUI */}
+                  
                 </div>
               )
             })
