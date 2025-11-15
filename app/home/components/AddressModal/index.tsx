@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, MapPin, Home, Building, User, Phone } from 'lucide-react'
-import { Address } from '@/types'
+import { Address } from '@/types' // <-- O TIPO JÁ ESTÁ AQUI
 import { useAuth } from '@/context/AuthContext'
 import styles from './styles.module.css'
 
@@ -95,7 +95,10 @@ export default function AddressModal({ onClose, onConfirmAddress, onAddAddressCl
             <>
               <div className={styles.addressList}>
                 <h3 className={styles.sectionTitle}>Endereços Salvos</h3>
-                {savedAddresses.map((address) => (
+                {/* --- A CORREÇÃO ESTÁ AQUI ---
+                  Adicionamos o tipo (address: Address)
+                */}
+                {savedAddresses.map((address: Address) => (
                   <button
                     key={address.id}
                     className={`${styles.optionItem} ${selectedAddress?.id === address.id ? styles.selected : ''}`}
