@@ -1,20 +1,20 @@
 'use client'
 
-// 1. Importar 'memo' do React (esta é a "blindagem")
 import { useState, useEffect, memo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { DisplayProduct, SupabaseProduct, SupabaseCombo, SupabaseCategory } from '@/types'
+// --- IMPORTAÇÕES ADICIONADAS PARA O FETCH ---
+import { DisplayProduct, SupabaseProduct, SupabaseCombo, SupabaseCategory, ComplementCategory, SupabaseComboGroup, ComplementOption } from '@/types'
+// --- FIM DA ADIÇÃO ---
 import CategoryTabs from '../CategoryTabs'
 import ProductCard from '../ProductCard'
 import ProductDetailsModal from '../ProductDetailsModal'
-// Importar o 'styles' da página principal para usar 'productsGrid'
 import styles from '../../styles.module.css'
 
 const PROMO_CATEGORY_ID = 'virtual_promo_id'
 
-// 2. Esta é a lógica que estava na sua page.tsx
+// 1. O componente é mantido para usar o memo e evitar re-renders
 function MenuContainer() {
-  // --- Estados que saíram da page.tsx ---
+  // --- ESTADOS DO MODAL E DO MENU (Mantidos) ---
   const [selectedProduct, setSelectedProduct] = useState<DisplayProduct | null>(null)
   const [isProductDetailsOpen, setIsProductDetailsOpen] = useState(false)
   
@@ -24,18 +24,79 @@ function MenuContainer() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [isLoadingMenu, setIsLoadingMenu] = useState(true)
 
-  // --- Funções que saíram da page.tsx ---
-  const handleProductClick = (product: DisplayProduct) => { 
-    setSelectedProduct(product)
-    setIsProductDetailsOpen(true) 
-  }
-  const handleCloseProductDetails = () => { 
-    setIsProductDetailsOpen(false)
-    // Pequena melhoria: esperar a animação antes de limpar o produto
-    setTimeout(() => setSelectedProduct(null), 300)
+  // --- (CORREÇÃO 1) ESTADOS NECESSÁRIOS PARA O MODAL ---
+  const [complements, setComplements] = useState<ComplementCategory[]>([])
+  const [isLoadingComplements, setIsLoadingComplements] = useState(false)
+  // --- FIM DA CORREÇÃO 1 ---
+
+  // --- (CORREÇÃO 2) FUNÇÃO PARA BUSCAR COMPLEMENTOS (Movida de volta) ---
+  const fetchComplements = async (product: DisplayProduct) => {
+    if (product.type !== 'combo') {
+      setComplements([])
+      setIsLoadingComplements(false)
+      return
+    }
+
+    setIsLoadingComplements(true)
+    
+    try {
+      const { data: groups, error: groupsError } = await supabase
+        .from('combo_groups')
+        .select('*')
+        .eq('combo_id', product.id)
+
+      if (groupsError) throw groupsError
+
+      const categories: ComplementCategory[] = await Promise.all(
+        groups.map(async (group: SupabaseComboGroup) => {
+          const { data: items, error: itemsError } = await supabase
+            .from('combo_group_items')
+            .select(`id, additional_price, products ( name, description )`)
+            .eq('group_id', group.id)
+
+          if (itemsError) console.error("Erro ao buscar itens:", itemsError)
+
+          const options: ComplementOption[] = (items || []).map((item: any) => ({
+            id: item.id,
+            name: item.products.name,
+            price: item.additional_price,
+          }))
+
+          return {
+            id: group.id,
+            name: group.name,
+            type: 'single', // Hardcoded
+            maxSelection: 1, // Hardcoded
+            options: options,
+          }
+        })
+      )
+      setComplements(categories)
+    } catch (err) {
+      console.error("Erro ao buscar complementos:", err)
+      setComplements([]) // Limpa em caso de erro
+    } finally {
+      setIsLoadingComplements(false)
+    }
   }
 
-  // --- useEffects que saíram da page.tsx ---
+  // --- FUNÇÕES DE CONTROLE DE MODAL ---
+  const handleProductClick = (product: DisplayProduct) => { 
+    setSelectedProduct(product)
+    setIsProductDetailsOpen(true)
+    fetchComplements(product) // <-- CHAMA O FETCH
+  }
+  
+  const handleCloseProductDetails = () => { 
+    setIsProductDetailsOpen(false)
+    // Limpa os dados do modal para a próxima abertura
+    setTimeout(() => {
+      setSelectedProduct(null)
+      setComplements([]) // <-- LIMPA OS COMPLEMENTOS
+    }, 300) 
+  }
+
+  // --- EFEITOS DE BUSCAR E FILTRAR MENU (Mantidos) ---
   useEffect(() => {
     const fetchMenu = async () => {
       setIsLoadingMenu(true)
@@ -45,7 +106,7 @@ function MenuContainer() {
         name: 'Promoções',
         created_at: new Date().toISOString()
       }
-
+      // ... (Restante da lógica de busca do menu) ...
       const { data: categoryData, error: categoryError } = await supabase
         .from('categories')
         .select('*')
@@ -70,23 +131,11 @@ function MenuContainer() {
       if (comboError) console.error("Erro ao buscar combos:", comboError)
 
       const formattedProducts: DisplayProduct[] = (products || []).map((p: SupabaseProduct) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        price: p.price,
-        image_url: p.image_url,
-        type: 'product',
-        category_id: p.category_id,
+        id: p.id, name: p.name, description: p.description, price: p.price, image_url: p.image_url, type: 'product', category_id: p.category_id,
       }))
       
       const formattedCombos: DisplayProduct[] = (combos || []).map((c: SupabaseCombo) => ({
-        id: c.id,
-        name: c.name,
-        description: c.description || null,
-        price: c.base_price,
-        image_url: c.image_url || null,
-        type: 'combo',
-        category_id: PROMO_CATEGORY_ID,
+        id: c.id, name: c.name, description: c.description || null, price: c.base_price, image_url: c.image_url || null, type: 'combo', category_id: PROMO_CATEGORY_ID,
       }))
 
       setAllProducts([...formattedProducts, ...formattedCombos])
@@ -106,7 +155,7 @@ function MenuContainer() {
     }
   }, [activeCategory, allProducts])
 
-  // 3. O JSX que saiu da page.tsx
+  // 3. O JSX e o Modal com as props adicionadas
   return (
     <>
       <CategoryTabs 
@@ -129,12 +178,13 @@ function MenuContainer() {
         )}
       </div>
 
-      {/* O Modal do Produto agora vive AQUI,
-      isolado das atualizações do OrderContext */}
+      {/* MODAL COM PROPS CORRETAS */}
       {isProductDetailsOpen && selectedProduct && (
         <ProductDetailsModal
           product={selectedProduct}
           onClose={handleCloseProductDetails}
+          complements={complements}             // <-- PROP NECESSÁRIA
+          isLoadingComplements={isLoadingComplements} // <-- PROP NECESSÁRIA
         />
       )}
     </>
