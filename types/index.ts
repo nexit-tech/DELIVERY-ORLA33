@@ -13,7 +13,7 @@ export interface SupabaseProduct {
   category_id: string | null
   name: string
   description: string | null
-  price: number // O Supabase trata 'numeric' como 'number'
+  price: number
   promo_price: number | null
   image_url: string | null
   created_at?: string

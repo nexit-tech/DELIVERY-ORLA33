@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { AppUser, Address } from '@/types'
+import { AppUser, Address } from '@/types' // <-- Este import está correto
 import { Session, User } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -19,7 +19,7 @@ interface AuthContextType {
   ) => Promise<void>
   addAddress: (address: Omit<Address, 'id' | 'profile_id'>) => Promise<void>
   updatePassword: (newPassword: string) => Promise<void>
-  deleteAddress: (addressId: string) => Promise<void> // 1. PRECISA ESTAR NA INTERFACE
+  deleteAddress: (addressId: string) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -28,7 +28,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // ... (useEffect e fetchUserProfile permanecem os mesmos) ...
   useEffect(() => {
     setIsLoading(true)
     const getInitialSession = async () => {
@@ -72,7 +71,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setUser({
         id: session.user.id,
-        email: session.user.email,
+        // --- A CORREÇÃO ESTÁ AQUI (Linha 75) ---
+        // Se o email for undefined, usa uma string vazia ''
+        email: session.user.email || '', 
         name: profile.name,
         phone: profile.phone,
         addresses: addresses || []
@@ -84,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  // ... (login, logout, register, addAddress, updatePassword permanecem os mesmos) ...
+  // ... (o resto do arquivo: login, logout, register, etc. não muda) ...
   const login = async (email: string, pass: string) => {
     setIsLoading(true);
     try {
@@ -218,7 +219,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log("Senha atualizada com sucesso:", data)
   }
 
-  // --- 2. A FUNÇÃO PRECISA ESTAR IMPLEMENTADA ASSIM ---
   const deleteAddress = async (addressId: string) => {
     if (!user) {
       console.error("Nenhum usuário logado para deletar endereço.");
@@ -226,19 +226,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // ETAPA A: APAGAR DO BANCO DE DADOS
       const { error } = await supabase
         .from('addresses')
         .delete()
         .eq('id', addressId) 
-        .eq('profile_id', user.id); // Garante que só o dono pode apagar
+        .eq('profile_id', user.id); 
       
       if (error) {
         console.error("Erro ao deletar endereço do Supabase:", error);
         throw error;
       }
 
-      // ETAPA B: ATUALIZAR A TELA (ESTADO DO REACT)
       setUser((currentUser) => {
         if (!currentUser) return null;
         
@@ -266,7 +264,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     register,
     addAddress,
     updatePassword,
-    deleteAddress // 3. PRECISA ESTAR EXPORTADA AQUI
+    deleteAddress
   }
 
   return (
