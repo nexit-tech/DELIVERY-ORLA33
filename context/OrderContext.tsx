@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
-// --- CORREÇÃO 1: 'User' foi trocado para 'AppUser' ---
 import { CartItem, Order, OrderStatus, PaymentMethod, Address, AppUser } from '@/types' 
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/context/AuthContext' 
@@ -13,7 +12,6 @@ interface OrderContextType {
     totalPrice: number, 
     paymentMethod: PaymentMethod, 
     shippingAddress: Address,
-    // --- CORREÇÃO 2: 'User' foi trocado para 'AppUser' ---
     user: AppUser | null,
     changeFor?: number
   ) => Promise<Order> 
@@ -22,7 +20,6 @@ interface OrderContextType {
 
 export const OrderContext = createContext<OrderContextType | undefined>(undefined)
 
-// --- CORREÇÃO 3: 'User' foi trocado para 'AppUser' ---
 const formatOrderFromDB = (order: any, user: AppUser | null): Order => ({
   id: order.id,
   items: order.items,
@@ -76,22 +73,26 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
           table: 'orders',
           filter: `profile_id=eq.${user.id}`
         },
+        // --- CORREÇÃO 1: O LISTENER VAI IGNORAR O 'archived' ---
         (payload) => {
-          console.log('Status do pedido atualizado!', payload.new);
+          console.log('Status do pedido atualizado (listener)!', payload.new);
           const updatedOrder = formatOrderFromDB(payload.new, user);
 
+          // Se o status for 'archived', não fazemos nada.
+          // A função 'confirmDelivery' (o clique) vai tratar de remover.
           if (updatedOrder.status === 'archived') {
-            setOrders((currentOrders) => 
-              currentOrders.filter(o => o.id !== updatedOrder.id)
-            );
-          } else {
-            setOrders((currentOrders) => 
-              currentOrders.map(o => 
-                o.id === updatedOrder.id ? updatedOrder : o
-              )
-            );
+            console.log('Listener a ignorar status "archived".');
+            return; // Ignora a atualização para evitar a "corrida"
           }
+          
+          // Atualiza todos os outros status (pending, preparing, completed, etc.)
+          setOrders((currentOrders) => 
+            currentOrders.map(o => 
+              o.id === updatedOrder.id ? updatedOrder : o
+            )
+          );
         }
+        // --- FIM DA CORREÇÃO 1 ---
       )
       .subscribe();
 
@@ -103,11 +104,11 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
 
 
   const addOrder = async (
+    // ... (função addOrder não muda) ...
     items: CartItem[], 
     totalPrice: number, 
     paymentMethod: PaymentMethod, 
     shippingAddress: Address,
-    // --- CORREÇÃO 4: 'User' foi trocado para 'AppUser' ---
     user: AppUser | null,
     changeFor?: number
   ): Promise<Order> => {
@@ -144,23 +145,34 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  // --- CORREÇÃO 2: A FUNÇÃO DE CLIQUE ATUALIZA O ESTADO ---
   const confirmDelivery = async (orderId: string) => {
     try {
+      console.log(`A arquivar pedido (clique): ${orderId}`);
       const { error } = await supabase
         .from('orders')
         .update({ status: 'archived' })
         .eq('id', orderId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro no Supabase ao arquivar:", error);
+        throw error;
+      }
 
+      // Adicionamos a atualização de estado local DE VOLTA
+      // Agora é o clique (e não o listener) que remove o item.
+      console.log(`A remover pedido do estado local: ${orderId}`);
       setOrders((currentOrders) => 
         currentOrders.filter(order => order.id !== orderId)
       );
+
     } catch (err) {
       console.error("Erro em confirmDelivery:", err);
       throw err;
     }
   }
+  // --- FIM DA CORREÇÃO 2 ---
+
 
   return (
     <OrderContext.Provider value={{ orders, addOrder, confirmDelivery }}>

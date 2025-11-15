@@ -18,11 +18,10 @@ const getStatusInfo = (status: OrderStatus): { text: string; description: string
       return { text: 'Em preparo', description: 'Seu pedido está sendo preparado!' }
     case 'delivering':
       return { text: 'Em entrega', description: 'O pedido saiu para entrega.' }
-    case 'completed': // O Admin move para 'completed'
-      return { text: 'Entregue', description: 'Seu pedido foi entregue.' } // O cliente vê isto
+    case 'completed': 
+      return { text: 'Entregue', description: 'Seu pedido foi entregue.' } 
     case 'cancelled':
       return { text: 'Cancelado', description: 'O pedido foi cancelado.' }
-    // Não precisamos do caso 'archived' aqui, porque ele nem vai aparecer na lista
     default:
       return { text: 'Status', description: '...' }
   }
@@ -30,9 +29,7 @@ const getStatusInfo = (status: OrderStatus): { text: string; description: string
 
 export default function OrdersModal({ onClose }: OrdersModalProps) {
   const [isOpen, setIsOpen] = useState(false)
-  // 1. OBTER A FUNÇÃO CORRETA 'confirmDelivery'
   const { orders, confirmDelivery } = useOrders()
-  // 2. ESTADO DE LOADING (para saber qual botão está a ser clicado)
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -58,19 +55,24 @@ export default function OrdersModal({ onClose }: OrdersModalProps) {
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   }
 
-  // 3. CRIAR O HANDLER PARA O BOTÃO
+  // --- FUNÇÃO DE CONFIRMAR CORRIGIDA ---
   const handleConfirm = async (orderId: string) => {
     setLoadingOrderId(orderId); // Ativa o loading
     try {
       await confirmDelivery(orderId);
-      // O pedido vai sumir do estado local automaticamente
+      // O OrderContext vai remover o item da lista
+      // e este componente vai re-renderizar sem o card.
     } catch (err) {
       console.error(err);
       alert("Erro ao confirmar a entrega. Tente novamente.");
     } finally {
-      setLoadingOrderId(null); // Desativa o loading
+      // Adicionamos o 'finally' de volta.
+      // Como não há mais "corrida" (o listener ignora),
+      // é seguro resetar o loading quando a função (sucesso ou erro) terminar.
+      setLoadingOrderId(null);
     }
   }
+  // --- FIM DA CORREÇÃO ---
 
   return (
     <div 
@@ -96,13 +98,12 @@ export default function OrdersModal({ onClose }: OrdersModalProps) {
               const statusInfo = getStatusInfo(order.status)
               const firstItemName = order.items[0]?.product.name || 'Pedido'
               const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0)
-              const isLoading = loadingOrderId === order.id; // Verifica se ESTE botão está a carregar
+              const isLoading = loadingOrderId === order.id; 
 
               return (
                 <div key={order.id} className={styles.orderCard}>
                   <div className={styles.orderHeader}>
                     <h4>{firstItemName} {order.items.length > 1 ? `+ ${order.items.length - 1} itens` : ''}</h4>
-                    {/* 4. CORRIGIR PREÇO (usar R$ e o totalPrice do pedido) */}
                     <span className={styles.orderPrice}>R${order.totalPrice.toFixed(2)}</span>
                   </div>
                   <div className={styles.orderStatusWrapper}>
@@ -115,12 +116,11 @@ export default function OrdersModal({ onClose }: OrdersModalProps) {
                     <span>{formatTime(order.createdAt)}</span>
                   </div>
                   
-                  {/* 5. ATUALIZAR O BOTÃO CONDICIONAL */}
                   {order.status === 'completed' && (
                     <button 
                       className={styles.confirmButton}
-                      onClick={() => handleConfirm(order.id)} // Chama o novo handler
-                      disabled={isLoading} // Desativa se estiver a carregar
+                      onClick={() => handleConfirm(order.id)} 
+                      disabled={isLoading} 
                     >
                       {isLoading ? 'Confirmando...' : 'Confirmar Entrega'}
                     </button>
